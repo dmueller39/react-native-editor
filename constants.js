@@ -1,3 +1,4 @@
+// @flow
 export const COMMANDS = {
   search: 'search',
   goToLine: 'goToLine',

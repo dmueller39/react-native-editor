@@ -1,3 +1,4 @@
+// @flow
 import React, { PureComponent } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
 
@@ -11,6 +12,10 @@ const styles = StyleSheet.create({
   },
 });
 
+type KeyPressEvent = { nativeEvent: { key: string } };
+type SelectionChangeEvent = {
+  nativeEvent: { selection: { start: number, end: number } },
+};
 type State = {
   selection: {
     start: number,
@@ -43,7 +48,7 @@ export default class EditableLine extends PureComponent<void, Props, State> {
     },
   };
 
-  onKeyPress = event => {
+  onKeyPress = (event: KeyPressEvent) => {
     if (
       event.nativeEvent.key === 'Backspace' &&
       this.state.selection.start === 0 &&
@@ -53,11 +58,11 @@ export default class EditableLine extends PureComponent<void, Props, State> {
     }
   };
 
-  onChangeActiveLine = event => {
-    this.props.onChangeActiveLine(event);
+  onChangeActiveLine = (text: string) => {
+    this.props.onChangeActiveLine(text);
   };
 
-  onSelectionChange = event => {
+  onSelectionChange = (event: SelectionChangeEvent) => {
     const { selection } = event.nativeEvent;
     this.setState(() => ({
       selection,

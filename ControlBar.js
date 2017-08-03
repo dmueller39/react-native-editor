@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import PropTypes from 'prop-types';
 
 import Button from './Button';
 import { COMMANDS } from './constants';
@@ -30,97 +29,24 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function ControlBar(props) {
-  const { actions } = props;
-  switch (props.command) {
-    case COMMANDS.search:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-        </View>
-      );
-    case COMMANDS.selectedWord:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-          <Button onPress={actions.onPressPreviousSelection} text="←" />
-          <Button onPress={actions.onPressNextSelection} text="→" />
-          <Button onPress={actions.onPressReplace} text="replace" />
-        </View>
-      );
-    case COMMANDS.selectedLine:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-          <Button onPress={actions.onPressPreviousLine} text="↑" />
-          <Button onPress={actions.onPressNextLine} text="↓" />
-          <View style={styles.spacer} />
-          <Button onPress={actions.onPressEdit} text="✎" />
-        </View>
-      );
-    case COMMANDS.replace:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-          <Button selected onPress={actions.onPressReplace} text="replace" />
-          <Button onPress={actions.onPressReplaceAll} text="replace all" />
-        </View>
-      );
-    case COMMANDS.replaceAll:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-          <Button onPress={actions.onPressReplace} text="replace" />
-          <Button
-            selected
-            onPress={actions.onPressReplaceAll}
-            text="replace all"
-          />
-        </View>
-      );
-    case COMMANDS.goToLine:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-        </View>
-      );
-    case COMMANDS.insert:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressX} text="x" />
-          <View style={styles.spacer} />
-          <Button onPress={actions.onPressDone} text="done" />
-        </View>
-      );
-    default:
-      return (
-        <View style={styles.container}>
-          <Button onPress={actions.onPressSearch} text="/abc/" />
-          <Button onPress={actions.onPressEnterLine} text="#" />
-          <View style={styles.spacer} />
-        </View>
-      );
-  }
-}
-
-ControlBar.propTypes = {
-  command: PropTypes.string,
-  actions: PropTypes.shape({
-    onPressNextSelection: PropTypes.func,
-    onPressPreviousSelection: PropTypes.func,
-    onPressNextLine: PropTypes.func,
-    onPressPreviousLine: PropTypes.func,
-    onPressX: PropTypes.func,
-    onPressDone: PropTypes.func,
-    onPressSearch: PropTypes.func,
-    onPressEnterLine: PropTypes.func,
-    onChangeSelectedWord: PropTypes.func,
-    onPressReplaceAll: PropTypes.func,
-    onPressRun: PropTypes.func,
-  }),
+type Props = {
+  command: ?string,
+  actions: {
+    onPressNextSelection: () => void,
+    onPressPreviousSelection: () => void,
+    onPressNextLine: () => void,
+    onPressPreviousLine: () => void,
+    onPressX: () => void,
+    onPressDone: () => void,
+    onPressSearch: () => void,
+    onPressEnterLine: () => void,
+    onPressReplaceAll: () => void,
+    onPressReplace: () => void,
+    onPressEdit: () => void,
+  },
 };
 
-ControlBar.defaultProps = {
+const defaultProps = {
   command: null,
   actions: {
     onPressNextSelection: () => {},
@@ -131,8 +57,88 @@ ControlBar.defaultProps = {
     onPressDone: () => {},
     onPressSearch: () => {},
     onPressEnterLine: () => {},
-    onChangeSelectedWord: () => {},
     onPressReplaceAll: () => {},
-    onPressRun: () => {},
+    onPressEdit: () => {},
   },
 };
+
+export default function ControlBar(props: Props) {
+  switch (props.command) {
+    case COMMANDS.search:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+        </View>
+      );
+    case COMMANDS.selectedWord:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+          <Button onPress={props.actions.onPressPreviousSelection} text="←" />
+          <Button onPress={props.actions.onPressNextSelection} text="→" />
+          <Button onPress={props.actions.onPressReplace} text="replace" />
+        </View>
+      );
+    case COMMANDS.selectedLine:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+          <Button onPress={props.actions.onPressPreviousLine} text="↑" />
+          <Button onPress={props.actions.onPressNextLine} text="↓" />
+          <View style={styles.spacer} />
+          <Button onPress={props.actions.onPressEdit} text="✎" />
+        </View>
+      );
+    case COMMANDS.replace:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+          <Button
+            selected
+            onPress={props.actions.onPressReplace}
+            text="replace"
+          />
+          <Button
+            onPress={props.actions.onPressReplaceAll}
+            text="replace all"
+          />
+        </View>
+      );
+    case COMMANDS.replaceAll:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+          <Button onPress={props.actions.onPressReplace} text="replace" />
+          <Button
+            selected
+            onPress={props.actions.onPressReplaceAll}
+            text="replace all"
+          />
+        </View>
+      );
+    case COMMANDS.goToLine:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+        </View>
+      );
+    case COMMANDS.insert:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressX} text="x" />
+          <View style={styles.spacer} />
+          <Button onPress={props.actions.onPressDone} text="done" />
+        </View>
+      );
+    default:
+      return (
+        <View style={styles.container}>
+          <Button onPress={props.actions.onPressSearch} text="/abc/" />
+          <Button onPress={props.actions.onPressEnterLine} text="#" />
+          <View style={styles.spacer} />
+        </View>
+      );
+  }
+}
+
+ControlBar.defaultProps = defaultProps;

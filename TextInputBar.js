@@ -1,6 +1,5 @@
+// @flow
 import React from 'react';
-
-import PropTypes from 'prop-types';
 
 import { StyleSheet, TextInput, View, Button } from 'react-native';
 
@@ -21,7 +20,23 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function TextInputBar(props) {
+type Props = {
+  text: string,
+  keyboardType: string,
+  onChangeText: (string) => void,
+  onConfirmText: (string) => void,
+};
+
+const defaultProps = {
+  text: '',
+  keyboardType: null,
+  onChangeText: () => {},
+  onConfirmText: () => {},
+};
+
+// TODO fix inline closure and callback to parent (this.state.text)
+
+export default function TextInputBar(props: Props) {
   return (
     <View style={styles.container}>
       <TextInput
@@ -37,16 +52,4 @@ export default function TextInputBar(props) {
   );
 }
 
-TextInputBar.propTypes = {
-  text: PropTypes.string,
-  keyboardType: PropTypes.string,
-  onChangeText: PropTypes.func,
-  onConfirmText: PropTypes.func,
-};
-
-TextInputBar.defaultProps = {
-  text: '',
-  keyboardType: null,
-  onChangeText: () => {},
-  onConfirmText: () => {},
-};
+TextInputBar.defaultProps = defaultProps;

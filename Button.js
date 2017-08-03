@@ -1,5 +1,5 @@
+// @flow
 import React from 'react';
-import PropTypes from 'prop-types';
 import { TouchableHighlight, Text, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
@@ -20,23 +20,26 @@ const styles = StyleSheet.create({
   },
 });
 
-const getTextStyles = ({ selected }) =>
+const getTextStyles = (selected: boolean) =>
   selected ? [styles.selected, styles.buttonText] : styles.buttonText;
 
-export default function Button(props) {
+type Props = {
+  selected: boolean,
+  text: string,
+  onPress: () => void,
+};
+
+const defaultProps = {
+  text: '',
+  onPress: () => {},
+};
+
+export default function Button(props: Props) {
   return (
     <TouchableHighlight style={styles.button} onPress={props.onPress}>
-      <Text style={getTextStyles(props)}>{props.text}</Text>
+      <Text style={getTextStyles(props.selected)}>{props.text}</Text>
     </TouchableHighlight>
   );
 }
 
-Button.propTypes = {
-  text: PropTypes.string,
-  onPress: PropTypes.func,
-};
-
-Button.defaultProps = {
-  text: '',
-  onPress: () => {},
-};
+Button.defaultProps = defaultProps;
