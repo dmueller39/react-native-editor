@@ -1,6 +1,15 @@
+// @flow
 import React, { PureComponent } from 'react';
 import { Text, TouchableWithoutFeedback, View, StyleSheet } from 'react-native';
-import PropTypes from 'prop-types';
+
+import {
+  type TextSection,
+  type Location,
+  type Item,
+  type Lines,
+  type PressEvent,
+  type RawLocation,
+} from './types';
 
 import {
   CONTINUED_STRING,
@@ -37,7 +46,11 @@ const styles = StyleSheet.create({
 
 // map from locations based on the items that can be line wrapped
 // to locations based on the original data separated by newlines
-export function getRawLocation(locations, item, itemIndex) {
+export function getRawLocation(
+  locations: Array<Location>,
+  item: Item,
+  itemIndex: number
+) {
   let length = 0;
   let offsetStart = 0;
   locations.forEach(location => {
@@ -59,7 +72,10 @@ export function getRawLocation(locations, item, itemIndex) {
   };
 }
 
-const isCharacterIndexSelectedWord = (characterIndex, textSections) =>
+const isCharacterIndexSelectedWord = (
+  characterIndex: number,
+  textSections: Array<TextSection>
+): boolean =>
   textSections.find(
     textSection =>
       textSection.highlight === 'current' &&
@@ -69,7 +85,7 @@ const isCharacterIndexSelectedWord = (characterIndex, textSections) =>
 
 // returns the start index, the length, and if the word goes to the end of the
 // string
-function locateWord(text, index) {
+function locateWord(text: string, index: number) {
   if (!CHARACTER_REGEXP.test(text.charAt(index))) {
     return {
       hasWord: false,
@@ -102,7 +118,11 @@ function locateWord(text, index) {
   };
 }
 
-function multilineLocateWord(characterIndex, lineIndex, lines) {
+function multilineLocateWord(
+  characterIndex: number,
+  lineIndex: number,
+  lines: Lines
+) {
   let startLine = lines[lineIndex];
   const { text } = startLine;
 
@@ -161,18 +181,19 @@ function multilineLocateWord(characterIndex, lineIndex, lines) {
   };
 }
 
-export default class BufferLine extends PureComponent {
-  static propTypes = {
-    item: PropTypes.shape({}).isRequired,
-    index: PropTypes.number.isRequired,
-    lines: PropTypes.shape([]).isRequired,
-    onSelectLine: PropTypes.func.isRequired,
-    onSelectWord: PropTypes.func.isRequired,
-    onSelectSelectedWord: PropTypes.func.isRequired,
-    selectedLineIndex: PropTypes.number.isRequired,
-  };
+type Props = {
+  item: Item,
+  index: number,
+  lines: Lines,
+  onSelectLine: (number) => void,
+  // FIXME use a single type for describing a location
+  onSelectWord: (string, RawLocation) => void,
+  onSelectSelectedWord: () => void,
+  selectedLineIndex: number,
+};
 
-  onLinePress = evt => {
+export default class BufferLine extends PureComponent<void, Props, void> {
+  onLinePress = (evt: PressEvent) => {
     const {
       item,
       index,

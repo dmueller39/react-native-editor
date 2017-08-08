@@ -1,8 +1,15 @@
 import React, { PureComponent } from 'react';
-import PropTypes from 'prop-types';
 import { FlatList } from 'react-native';
 
 import _ from 'lodash';
+
+import {
+  type TextSection,
+  type Item,
+  type Lines,
+  type RawLocation,
+  isLocationEqual,
+} from './types';
 
 import EditableLine from './EditableLine';
 import BufferLine from './BufferLine';
@@ -14,11 +21,15 @@ import {
   CHARACTER_HEIGHT,
 } from './constants';
 
-function getTextOnlySection(text) {
+function getTextOnlySection(text: string): Array<TextSection> {
   return [{ text, start: 0, end: text.length, highlight: 'normal' }];
 }
 
-export function getTextSubsections(textSections, index, length) {
+export function getTextSubsections(
+  textSections: Array<TextSection>,
+  index: number,
+  length: number
+): Array<TextSection> {
   const textSubsections = [];
 
   textSections.forEach(section => {
@@ -47,10 +58,10 @@ export function getTextSubsections(textSections, index, length) {
 }
 
 export function getTextSections(
-  text,
-  selectedWord,
-  selectedLocation,
-  lineIndex
+  text: string,
+  selectedWord: string,
+  selectedLocation: RawLocation,
+  lineIndex: number
 ) {
   let index = selectedWord ? text.indexOf(selectedWord) : -1;
   if (index === -1) {
@@ -91,13 +102,13 @@ export function getTextSections(
 }
 
 function processLines(
-  data,
-  width,
-  selectedWord,
-  selectedLocation,
-  selectedLineIndex,
-  activeLineText
-) {
+  data: string,
+  width: number,
+  selectedWord: string,
+  selectedLocation: RawLocation,
+  selectedLineIndex: number,
+  activeLineText: string
+): Lines {
   const maxCharacters = Math.floor(width / CHARACTER_WIDTH);
   const combinedLines = data.split('\n').map((text, rawLineIndex) => {
     if (rawLineIndex === selectedLineIndex && activeLineText != null) {
@@ -133,34 +144,48 @@ function processLines(
     }
     return entries;
   });
-  return _.flatten(combinedLines);
+  const flattened = [];
+  combinedLines.forEach(item => {
+    if (Array.isArray(item)) {
+      item.forEach(subitem => {
+        flattened.push(subitem);
+      });
+    } else {
+      flattened.push(item);
+    }
+  });
+  // TODO resolve this
+  return flattened;
 }
 
-function getLineLayout(data, index) {
+function getLineLayout(data: string, index: number) {
   return { length: CHARACTER_HEIGHT, offset: index * CHARACTER_HEIGHT, index };
 }
 
-export default class Buffer extends PureComponent {
-  static defaultProps = {
-    selectedWord: null,
-    selectedLineIndex: null,
-    activeLineText: null,
-  };
+const defaultProps = {
+  selectedWord: null,
+  selectedLineIndex: null,
+  activeLineText: null,
+};
 
-  static propTypes = {
-    // TODO fix these eslint errors by properly implementing flow
-    onSelectLine: PropTypes.func.isRequired,
-    onSelectWord: PropTypes.func.isRequired,
-    onSelectSelectedWord: PropTypes.func.isRequired,
-    data: PropTypes.string.isRequired,
-    selectedWord: PropTypes.string,
-    selectedLineIndex: PropTypes.number,
-    activeLineText: PropTypes.string,
-    width: PropTypes.number.isRequired,
-    selectedLocation: PropTypes.number.isRequired,
-  };
+type DefaultProps = typeof defaultProps;
 
-  constructor(props) {
+type Props = {
+  onSelectLine: (number) => void,
+  onSelectWord: (string, RawLocation) => void,
+  onSelectSelectedWord: () => void,
+  data: string,
+  selectedWord: string,
+  selectedLineIndex: number,
+  activeLineText: string,
+  width: number,
+  selectedLocation: RawLocation,
+};
+
+export default class Buffer extends PureComponent<DefaultProps, Props, void> {
+  static defaultProps = defaultProps;
+
+  constructor(props: Props) {
     super();
     this.lines = processLines(
       props.data,
@@ -172,7 +197,7 @@ export default class Buffer extends PureComponent {
     );
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps: Props) {
     this.lines = processLines(
       nextProps.data,
       nextProps.width,
@@ -182,10 +207,10 @@ export default class Buffer extends PureComponent {
       nextProps.activeLineText
     );
   }
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     if (
       this.props.selectedLocation != null &&
-      !_.isEqual(this.props.selectedLocation, prevProps.selectedLocation)
+      isLocationEqual(this.props.selectedLocation, prevProps.selectedLocation)
     ) {
       this.scrollToRawLineIndex(this.props.selectedLocation.lineIndex);
     }
@@ -198,20 +223,21 @@ export default class Buffer extends PureComponent {
     }
   }
 
-  onViewableItemsChanged = ({ viewableItems }) => {
-    this.viewableItems = viewableItems;
+  onViewableItemsChanged = (info: { viewableItems: Array<{ item: Item }> }) => {
+    this.viewableItems = info.viewableItems;
   };
 
-  scrollToRawLineIndex(rawLineIndex) {
-    const viewableSelectedItem = _.find(
-      this.viewableItems,
+  flatListRef: FlatList<Item>;
+  lines: Lines = [];
+  viewableItems: Array<{ item: Item }> = [];
+  scrollToRawLineIndex(rawLineIndex: number) {
+    const viewableSelectedItem = this.viewableItems.find(
       viewableItem => viewableItem.item.rawLineIndex === rawLineIndex
     );
 
     // don't scroll if the line is already visible
     if (viewableSelectedItem == null) {
-      const index = _.findIndex(
-        this.lines,
+      const index = this.lines.findIndex(
         line => line.rawLineIndex === rawLineIndex
       );
       this.flatListRef.scrollToIndex({
@@ -222,11 +248,11 @@ export default class Buffer extends PureComponent {
     }
   }
 
-  captureRef = ref => {
+  captureRef = (ref: FlatList<Item>) => {
     this.flatListRef = ref;
   };
 
-  renderItem = param => {
+  renderItem = (param: { item: Item }) => {
     if (param.item.isEditing) {
       return <EditableLine {...this.props} text={param.item.activeLineText} />;
     }
@@ -250,7 +276,7 @@ export default class Buffer extends PureComponent {
         getItemLayout={getLineLayout}
         onViewableItemsChanged={this.onViewableItemsChanged}
         showsVerticalScrollIndicator={false}
-        keyExtractor={(item, index) => `line-${index}`}
+        keyExtractor={(item: void, index: number) => `line-${String(index)}`}
         windowSize={5}
         data={this.lines}
         renderItem={this.renderItem}
