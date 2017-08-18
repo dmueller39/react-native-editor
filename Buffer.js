@@ -1,8 +1,6 @@
 import React, { PureComponent } from 'react';
 import { FlatList } from 'react-native';
 
-import _ from 'lodash';
-
 import {
   type TextSection,
   type Item,

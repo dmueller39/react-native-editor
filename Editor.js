@@ -1,10 +1,12 @@
+// @flow
 import React, { Component } from 'react';
 
-import PropTypes from 'prop-types';
+import { StyleSheet, KeyboardAvoidingView } from 'react-native';
 
-import { StyleSheet, KeyboardAvoidingView, ViewPropTypes } from 'react-native';
-
-import _ from 'lodash';
+import _ from 'underscore';
+import {
+  type StyleObj,
+} from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 
 import Buffer from './Buffer';
 import ControlBar from './ControlBar';
@@ -12,6 +14,8 @@ import TextInputBar from './TextInputBar';
 import text, { replaceRange } from './text';
 
 import { COMMANDS } from './constants';
+
+import { type RawLocation } from './types';
 
 const styles = StyleSheet.create({
   buffer: {
@@ -22,7 +26,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export function getMatchLocations(haystack, word, lineIndex) {
+export function getMatchLocations(
+  haystack: string,
+  word: string,
+  lineIndex: number
+) {
   let index = haystack.indexOf(word);
   if (index === -1) {
     return [];
@@ -41,14 +49,18 @@ export function getMatchLocations(haystack, word, lineIndex) {
   return locations;
 }
 
-function getAllMatchLocations(word, haystack) {
+function getAllMatchLocations(word: string, haystack: string) {
   return _.flatten(
     _.map(haystack.split('\n'), (line, index) =>
       getMatchLocations(line, word, index))
   );
 }
 
-function getNextLocation(word, location, haystack) {
+function getNextLocation(
+  word: string,
+  location: RawLocation,
+  haystack: string
+) {
   const locations = getAllMatchLocations(word, haystack);
   if (location === null) {
     return locations[0];
@@ -62,8 +74,12 @@ function getNextLocation(word, location, haystack) {
   return nextLocation || locations[0];
 }
 
-function getPreviousLocation(word, location) {
-  const locations = _.reverse(getAllMatchLocations(word, text));
+function getPreviousLocation(
+  word: string,
+  location: RawLocation,
+  haystack: string
+) {
+  const locations = getAllMatchLocations(word, haystack).reverse();
   if (location === null) {
     return locations[0];
   }
@@ -76,87 +92,136 @@ function getPreviousLocation(word, location) {
   return nextLocation || locations[0];
 }
 
-function getDataWithReplaceWord(replacementWord, selectedLocation, data) {
+function getDataWithReplaceWord(
+  replacementWord: string,
+  selectedLocation: RawLocation,
+  data: string
+) {
   const lines = data.split('\n').slice(0, selectedLocation.lineIndex);
   const newlineCharacterCount = selectedLocation.lineIndex;
-  const charactersBeforeLine = _.sum(_.map(lines, line => line.length)) +
-    newlineCharacterCount;
+  const charactersBeforeLine: number = lines
+    .map(line => line.length)
+    .reduce((sum, length) => length + sum, 0) + newlineCharacterCount;
   const start = charactersBeforeLine + selectedLocation.start;
   const end = charactersBeforeLine + selectedLocation.end;
 
   return data.slice(0, start) + replacementWord + data.slice(end);
 }
 
-export default class Editor extends Component {
-  static defaultProps = {
-    data: null,
-    onUpdateData: () => {},
-    style: null,
-  };
+/*
 
-  static propTypes = {
-    dimensions: PropTypes.shape({
-      width: PropTypes.number,
-      height: PropTypes.number,
-    }).isRequired,
-    data: PropTypes.string,
-    onUpdateData: PropTypes.func,
-    style: ViewPropTypes.style,
-  };
+const start: number = _.sum(
+  lines.slice(0, selectedLineIndex).map(line => line.length + 1)
+);
 
-  constructor({ data }) {
+const start: number = _.sum(
+  lines.slice(0, this.state.selectedLineIndex).map(line => line.length + 1)
+);
+
+*/
+
+function getStartOfLineIndex(index: number, lines: Array<string>): number {
+  return lines
+    .slice(0, index)
+    .map(line => line.length + 1)
+    .reduce((sum, el) => sum + el, 0);
+}
+
+const defaultProps = {
+  data: '',
+  onUpdateData: () => {},
+  style: null,
+};
+
+type Props = {
+  dimensions: {
+    width: number,
+  },
+  data: string,
+  onUpdateData: () => {},
+  style: StyleObj,
+};
+
+type State = {
+  data?: string,
+  selectedWord?: ?string,
+  selectedLocation?: ?RawLocation,
+  selectedLineIndex?: ?number,
+  command?: ?string,
+  activeLineText?: ?string,
+  replacementWord?: ?string,
+  goToLineText?: ?string,
+  selectedLineTimestamp?: ?number,
+};
+
+type DefaultProps = typeof defaultProps;
+
+export default class Editor extends Component<DefaultProps, Props, State> {
+  static defaultProps = defaultProps;
+
+  constructor({ data }: Props) {
     super();
     this.state = { data };
   }
+
+  state: State = {};
 
   componentDidUpdate() {
     this.props.onUpdateData(this.state.data);
   }
 
   onPressNextSelection() {
-    const selectedLocation = getNextLocation(
-      this.state.selectedWord,
-      this.state.selectedLocation,
-      this.state.data
-    );
+    const { data, selectedWord } = this.state;
+    let { selectedLocation } = this.state;
+    if (selectedWord == null || selectedLocation == null || data == null) {
+      return;
+    }
+    selectedLocation = getNextLocation(selectedWord, selectedLocation, data);
     this.setState({ selectedLocation });
   }
 
   onPressPreviousSelection() {
-    const selectedLocation = getPreviousLocation(
-      this.state.selectedWord,
-      this.state.selectedLocation,
-      this.state.data
+    const { data, selectedWord } = this.state;
+    let { selectedLocation } = this.state;
+    if (selectedWord == null || selectedLocation == null || data == null) {
+      return;
+    }
+    selectedLocation = getPreviousLocation(
+      selectedWord,
+      selectedLocation,
+      data
     );
     this.setState({ selectedLocation });
   }
 
   onPressNextLine() {
-    const selectedLineIndex = Math.min(
-      this.state.selectedLineIndex + 1,
-      this.state.data.split('\n').length - 1
+    const { data } = this.state;
+    let { selectedLineIndex } = this.state;
+    if (selectedLineIndex == null || data == null) {
+      return;
+    }
+    selectedLineIndex = Math.min(
+      selectedLineIndex + 1,
+      data.split('\n').length - 1
     );
     this.setState({ selectedLineIndex });
   }
 
   onPressDone() {
+    const { selectedLineIndex, activeLineText } = this.state;
+    let { data } = this.state;
+    if (selectedLineIndex == null || data == null || activeLineText == null) {
+      return;
+    }
     // when we see a new line, we handle this as a committed action,
     // so that we are only ever editing a single line at a time
     // this means that every individual newline action can be undone
-    const lines = this.state.data.split('\n');
-    // line.length + 1 because we split on newlines
-    const start = _.sum(
-      lines.slice(0, this.state.selectedLineIndex).map(line => line.length + 1)
-    );
-    const end = start + lines[this.state.selectedLineIndex].length;
+    const lines = data.split('\n');
+    const start = getStartOfLineIndex(selectedLineIndex, lines);
+    const end = start + lines[selectedLineIndex].length;
     // poor mans redux :)
-    const action = replaceRange(
-      this.state.data,
-      start,
-      end,
-      this.state.activeLineText
-    );
-    const { data } = text(this.state, action);
+    const action = replaceRange(data, start, end, activeLineText);
+    data = text({ data }, action).data;
 
     this.setState({
       data,
@@ -166,7 +231,11 @@ export default class Editor extends Component {
   }
 
   onPressPreviousLine() {
-    const selectedLineIndex = Math.max(0, this.state.selectedLineIndex - 1);
+    let { selectedLineIndex } = this.state;
+    if (selectedLineIndex == null) {
+      return;
+    }
+    selectedLineIndex = Math.max(0, selectedLineIndex - 1);
     this.setState({ selectedLineIndex });
   }
 
@@ -197,15 +266,19 @@ export default class Editor extends Component {
     }
   }
 
-  onSelectLine(selectedLineIndex) {
+  onSelectLine(selectedLineIndex: number) {
     const selectedLineTimestamp = +new Date();
-    this.setState(oldState => {
+    this.setState((oldState: State) => {
+      const { data } = oldState;
+      if (data == null) {
+        return {};
+      }
       if (
         oldState.command === COMMANDS.selectedLine &&
         oldState.selectedLineIndex === selectedLineIndex &&
-        selectedLineTimestamp - oldState.selectedLineTimestamp < 1000
+        selectedLineTimestamp - (oldState.selectedLineTimestamp || 0) < 1000
       ) {
-        const activeLineText = this.state.data.split('\n')[selectedLineIndex];
+        const activeLineText = data.split('\n')[selectedLineIndex];
         return {
           command: COMMANDS.insert,
           activeLineText,
@@ -223,7 +296,7 @@ export default class Editor extends Component {
     });
   }
 
-  onSelectWord(word, location) {
+  onSelectWord(word: string, location: RawLocation) {
     this.setState({
       command: COMMANDS.selectedWord,
       selectedWord: word,
@@ -247,18 +320,14 @@ export default class Editor extends Component {
     this.setState({ command: COMMANDS.goToLine });
   }
 
-  onViewableItemsChanged(viewableItems) {
-    this.setState({ viewableItems });
-  }
-
-  onChangeSelectedWord(selectedWord) {
+  onChangeSelectedWord(selectedWord: string) {
     this.setState({
       selectedWord,
       selectedLocation: null,
     });
   }
 
-  onConfirmGoToLine(line) {
+  onConfirmGoToLine(line: string) {
     const selectedLineIndex = Number(line);
     this.setState({
       selectedWord: null,
@@ -268,7 +337,7 @@ export default class Editor extends Component {
     });
   }
 
-  onChangeGoToLineText(goToLineText) {
+  onChangeGoToLineText(goToLineText: string) {
     this.setState({
       goToLineText,
       selectedWord: null,
@@ -276,12 +345,14 @@ export default class Editor extends Component {
     });
   }
 
-  onConfirmSelectedWord(selectedWord) {
-    const selectedLocation = getNextLocation(
-      selectedWord,
-      this.state.selectedLocation,
-      this.state.data
-    );
+  onConfirmSelectedWord(selectedWord: string) {
+    let { selectedLocation } = this.state;
+    const { data } = this.state;
+    if (data == null || selectedLocation == null) {
+      return;
+    }
+
+    selectedLocation = getNextLocation(selectedWord, selectedLocation, data);
     this.setState({
       command: selectedWord != null ? COMMANDS.selectedWord : null,
       selectedWord,
@@ -289,15 +360,21 @@ export default class Editor extends Component {
     });
   }
 
-  onChangeReplacementWord(replacementWord) {
+  onChangeReplacementWord(replacementWord: string) {
     this.setState({
       replacementWord,
     });
   }
 
-  onConfirmReplaceAll(replacementWord) {
-    const regex = RegExp(this.state.selectedWord, 'g');
-    const data = this.state.data.replace(regex, replacementWord);
+  onConfirmReplaceAll(replacementWord: string) {
+    let { data } = this.state;
+    const { selectedWord } = this.state;
+    if (data == null || selectedWord == null) {
+      return;
+    }
+
+    const regex = RegExp(selectedWord, 'g');
+    data = data.replace(regex, replacementWord);
 
     this.setState({
       data,
@@ -307,12 +384,13 @@ export default class Editor extends Component {
     });
   }
 
-  onConfirmReplaceWord(replacementWord) {
-    const data = getDataWithReplaceWord(
-      replacementWord,
-      this.state.selectedLocation,
-      this.state.data
-    );
+  onConfirmReplaceWord(replacementWord: string) {
+    let { data } = this.state;
+    const { selectedLocation } = this.state;
+    if (data == null || selectedLocation == null) {
+      return;
+    }
+    data = getDataWithReplaceWord(replacementWord, selectedLocation, data);
 
     this.setState({
       data,
@@ -334,73 +412,76 @@ export default class Editor extends Component {
   }
 
   onPressEdit() {
-    const activeLineText = this.state.data.split('\n')[
-      this.state.selectedLineIndex
-    ];
+    const { data, selectedLineIndex } = this.state;
+    if (data == null || selectedLineIndex == null) {
+      return;
+    }
+    const activeLineText = data.split('\n')[selectedLineIndex];
     this.setState({
       command: COMMANDS.insert,
       activeLineText,
     });
   }
 
-  onChangeActiveLine(activeLineText) {
+  onChangeActiveLine(activeLineText: string) {
     const activeLines = activeLineText.split('\n');
-    if (activeLines.length > 1) {
-      // when we see a new line, we handle this as a committed action,
-      // so that we are only ever editing a single line at a time
-      // this means that every individual newline action can be undone
-      const lines = this.state.data.split('\n');
-      // line.length + 1 because we split on newlines
-      const start = _.sum(
-        lines
-          .slice(0, this.state.selectedLineIndex)
-          .map(line => line.length + 1)
-      );
-      const end = start + lines[this.state.selectedLineIndex].length;
-      // poor mans redux :)
-      let replacement = activeLineText;
-      let newLineText = activeLines[1];
-      if (activeLines[1] === '') {
-        const spacing = activeLines[0].split(activeLines[0].trim())[0];
-        replacement += spacing;
-        newLineText += spacing;
-      }
-
-      const action = replaceRange(this.state.data, start, end, replacement);
-      const { data } = text(this.state, action);
-
-      const selectedLineIndex = this.state.selectedLineIndex + 1;
-
-      this.setState({
-        selectedLineIndex,
-        activeLineText: newLineText,
-        data,
-      });
-    } else {
+    if (activeLines.length <= 1) {
       this.setState({
         activeLineText,
       });
+      return;
     }
+    let { data, selectedLineIndex } = this.state;
+    if (data == null || selectedLineIndex == null) {
+      return;
+    }
+    // when we see a new line, we handle this as a committed action,
+    // so that we are only ever editing a single line at a time
+    // this means that every individual newline action can be undone
+    const lines = data.split('\n');
+    // line.length + 1 because we split on newlines
+    const start = getStartOfLineIndex(selectedLineIndex, lines);
+    const end = start + lines[selectedLineIndex].length;
+    // poor mans redux :)
+    let replacement = activeLineText;
+    let newLineText = activeLines[1];
+    if (activeLines[1] === '') {
+      const spacing = activeLines[0].split(activeLines[0].trim())[0];
+      replacement += spacing;
+      newLineText += spacing;
+    }
+
+    const action = replaceRange(data, start, end, replacement);
+    data = text({ data }, action).data;
+
+    selectedLineIndex += 1;
+
+    this.setState({
+      selectedLineIndex,
+      activeLineText: newLineText,
+      data,
+    });
   }
 
   onDeleteNewline() {
-    if (this.state.selectedLineIndex === 0) {
+    let {
+      selectedLineIndex,
+      data,
+    } = this.state;
+    if (data == null || selectedLineIndex == null || selectedLineIndex === 0) {
       return;
     }
 
-    const lines = this.state.data.split('\n');
+    const lines = data.split('\n');
 
-    const end = lines
-      .slice(0, this.state.selectedLineIndex)
-      .map(line => line.length + 1)
-      .reduce((characters, accum) => characters + accum);
+    const end = getStartOfLineIndex(selectedLineIndex, lines);
 
     const start = end - 1;
     // poor mans redux :)
-    const action = replaceRange(this.state.data, start, end, '');
-    const { data } = text(this.state, action);
+    const action = replaceRange(data, start, end, '');
+    data = text({ data }, action).data;
 
-    const selectedLineIndex = this.state.selectedLineIndex - 1;
+    selectedLineIndex -= 1;
     const activeLineText = data.split('\n')[selectedLineIndex];
 
     this.setState({
@@ -411,10 +492,11 @@ export default class Editor extends Component {
   }
 
   bufferActions = {
-    onSelectWord: (word, location) => this.onSelectWord(word, location),
+    onSelectWord: (word: string, location: RawLocation) =>
+      this.onSelectWord(word, location),
     onSelectSelectedWord: () => this.onSelectSelectedWord(),
-    onSelectLine: index => this.onSelectLine(index),
-    onChangeActiveLine: index => this.onChangeActiveLine(index),
+    onSelectLine: (index: number) => this.onSelectLine(index),
+    onChangeActiveLine: (t: string) => this.onChangeActiveLine(t),
     onDeleteNewline: () => this.onDeleteNewline(),
   };
 
@@ -423,7 +505,7 @@ export default class Editor extends Component {
     onPressPreviousSelection: () => this.onPressPreviousSelection(),
     onPressX: () => this.onPressX(),
     onPressSearch: () => this.onPressSearch(),
-    onChangeSelectedWord: t => this.onChangeSelectedWord(t),
+    onChangeSelectedWord: (t: string) => this.onChangeSelectedWord(t),
     onPressEdit: () => this.onPressEdit(),
     onPressReplace: () => this.onPressReplace(),
     onPressReplaceAll: () => this.onPressReplaceAll(),
@@ -435,7 +517,7 @@ export default class Editor extends Component {
 
   renderTextInputBar() {
     let actions = null;
-    let label = null;
+    let label: ?string = null;
     let keyboardType = 'default';
     switch (this.state.command) {
       case COMMANDS.search:
@@ -471,7 +553,7 @@ export default class Editor extends Component {
         break;
     }
     // if there are no actions to take, then we shouldn't render the bar
-    if (actions === null) {
+    if (actions === null || label == null) {
       return null;
     }
     return (

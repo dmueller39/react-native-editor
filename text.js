@@ -1,18 +1,43 @@
+// @flow
 export const CHANGE_TEXT = 'text-redux/CHANGE_TEXT';
 
-export const makeOperation = (startIndex, endIndex, replacement) => ({
+type Operation = {
+  startIndex: number,
+  endIndex: number,
+  replacement: string,
+};
+
+type Action = {
+  actionType: string,
+  ops: Array<Operation>,
+  undoOps: Array<Operation>,
+};
+
+type State = {
+  data: string,
+};
+
+export const makeOperation = (
+  startIndex: number,
+  endIndex: number,
+  replacement: string
+): Operation => ({
   startIndex,
   endIndex,
   replacement,
 });
 
-export const makeAction = (actionType, ops, undoOps) => ({
+export const makeAction = (
+  actionType: string,
+  ops: Array<Operation>,
+  undoOps: Array<Operation>
+): Action => ({
   actionType,
   ops,
   undoOps,
 });
 
-export function changeText(data, ops) {
+export function changeText(data: string, ops: Array<Operation>) {
   const changeTextRange = (_data, _ops, _offset) => {
     if (_ops == null || _ops.length === 0) {
       return _data;
@@ -31,7 +56,12 @@ export function changeText(data, ops) {
   return changeTextRange(data, ops, 0);
 }
 
-export function replaceRange(data, startIndex, endIndex, replacement) {
+export function replaceRange(
+  data: string,
+  startIndex: number,
+  endIndex: number,
+  replacement: string
+) {
   const undoReplacement = data.slice(startIndex, endIndex);
   const undoEnd = startIndex + replacement.length;
 
@@ -41,7 +71,11 @@ export function replaceRange(data, startIndex, endIndex, replacement) {
   return makeAction(CHANGE_TEXT, ops, undoOps);
 }
 
-export function replaceAllString(data, target, replacement) {
+export function replaceAllString(
+  data: string,
+  target: string,
+  replacement: string
+) {
   let undoFromIndex = 0;
   let fromIndex = 0;
   const ops = [];
@@ -70,7 +104,7 @@ export function replaceAllString(data, target, replacement) {
   };
 }
 
-export function replaceAll(data, target, replacement) {
+export function replaceAll(data: string, target: string, replacement: string) {
   if (typeof data === 'string') {
     return replaceAllString(data, target, replacement);
   }
@@ -82,7 +116,13 @@ const INITIAL_STATE = {
   data: '',
 };
 
-export default function text(state = INITIAL_STATE, action = {}) {
+export default function text(
+  state: State = INITIAL_STATE,
+  action: ?Action = null
+): State {
+  if (action == null) {
+    return state;
+  }
   switch (action.actionType) {
     case CHANGE_TEXT:
       return {
