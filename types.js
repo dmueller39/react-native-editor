@@ -18,23 +18,26 @@ export type TextSection = {
   text: string,
 };
 
-export type Item = {
+export type Line = {
   text: string,
   rawLineIndex: number,
   start: number,
   textSections: Array<TextSection>,
   continuing: boolean,
   continued: boolean,
-  activeLineText: string,
+  activeLineText: ?string,
 };
 
-export type Lines = Array<Item>;
+export type Lines = Array<Line>;
 
 export type PressEvent = { nativeEvent: { locationX: number } };
 
 // eslint-disable-next-line import/prefer-default-export
-export function isLocationEqual(location1: Location, location2: Location) {
+export function isLocationEqual(
+  location1: RawLocation,
+  location2: RawLocation
+) {
   return location1.lineIndex === location2.lineIndex &&
     location1.start === location2.start &&
-    location1.length === location2.length;
+    location1.end === location2.end;
 }

@@ -5,8 +5,8 @@ import { Text, TouchableWithoutFeedback, View, StyleSheet } from 'react-native';
 import {
   type TextSection,
   type Location,
-  type Item,
   type Lines,
+  type Line,
   type PressEvent,
   type RawLocation,
 } from './types';
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
 // to locations based on the original data separated by newlines
 export function getRawLocation(
   locations: Array<Location>,
-  item: Item,
+  item: Line,
   itemIndex: number
 ) {
   let length = 0;
@@ -182,14 +182,14 @@ function multilineLocateWord(
 }
 
 type Props = {
-  item: Item,
+  item: Line,
   index: number,
   lines: Lines,
   onSelectLine: (number) => void,
   // FIXME use a single type for describing a location
   onSelectWord: (string, RawLocation) => void,
   onSelectSelectedWord: () => void,
-  selectedLineIndex: number,
+  selectedLineIndex: ?number,
 };
 
 export default class BufferLine extends PureComponent<void, Props, void> {

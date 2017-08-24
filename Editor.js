@@ -108,18 +108,6 @@ function getDataWithReplaceWord(
   return data.slice(0, start) + replacementWord + data.slice(end);
 }
 
-/*
-
-const start: number = _.sum(
-  lines.slice(0, selectedLineIndex).map(line => line.length + 1)
-);
-
-const start: number = _.sum(
-  lines.slice(0, this.state.selectedLineIndex).map(line => line.length + 1)
-);
-
-*/
-
 function getStartOfLineIndex(index: number, lines: Array<string>): number {
   return lines
     .slice(0, index)
@@ -139,7 +127,7 @@ type Props = {
   },
   data: string,
   onUpdateData: () => {},
-  style: StyleObj,
+  style?: ?StyleObj,
 };
 
 type State = {
@@ -464,10 +452,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   }
 
   onDeleteNewline() {
-    let {
-      selectedLineIndex,
-      data,
-    } = this.state;
+    let { selectedLineIndex, data } = this.state;
     if (data == null || selectedLineIndex == null || selectedLineIndex === 0) {
       return;
     }

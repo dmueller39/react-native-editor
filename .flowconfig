@@ -1,4 +1,7 @@
 [ignore]
+; ignore the example
+.*/example/.*
+
 ; We fork some components by platform
 .*/*[.]android.js
 

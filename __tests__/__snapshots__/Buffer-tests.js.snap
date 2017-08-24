@@ -1,0 +1,111 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders correctly 1`] = `
+<RCTScrollView
+  activeLineText={null}
+  data={
+    Array [
+      Object {
+        "activeLineText": null,
+        "continued": false,
+        "continuing": false,
+        "end": 3,
+        "rawLineIndex": 0,
+        "start": 0,
+        "text": "foo",
+        "textSections": Array [
+          Object {
+            "end": 3,
+            "highlight": "normal",
+            "start": 0,
+            "text": "foo",
+          },
+        ],
+      },
+    ]
+  }
+  disableVirtualization={false}
+  getItem={[Function]}
+  getItemCount={[Function]}
+  getItemLayout={[Function]}
+  horizontal={false}
+  initialNumToRender={10}
+  keyExtractor={[Function]}
+  maxToRenderPerBatch={10}
+  numColumns={1}
+  onChangeActiveLine={[Function]}
+  onContentSizeChange={[Function]}
+  onDeleteNewline={[Function]}
+  onEndReachedThreshold={2}
+  onLayout={[Function]}
+  onMomentumScrollEnd={[Function]}
+  onScroll={[Function]}
+  onScrollBeginDrag={[Function]}
+  onScrollEndDrag={[Function]}
+  onSelectLine={[Function]}
+  onSelectSelectedWord={[Function]}
+  onSelectWord={[Function]}
+  onViewableItemsChanged={[Function]}
+  renderItem={[Function]}
+  renderScrollComponent={[Function]}
+  scrollEventThrottle={50}
+  selectedLineIndex={null}
+  selectedLocation={null}
+  selectedWord={null}
+  showsVerticalScrollIndicator={false}
+  stickyHeaderIndices={Array []}
+  updateCellsBatchingPeriod={50}
+  width={320}
+  windowSize={5}
+>
+  <View>
+    <View
+      onLayout={undefined}
+    >
+      <View
+        accessibilityComponentType={undefined}
+        accessibilityLabel={undefined}
+        accessibilityTraits={undefined}
+        accessible={true}
+        hitSlop={undefined}
+        nativeID={undefined}
+        onLayout={undefined}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={undefined}
+        testID={undefined}
+      >
+        <Text
+          accessible={true}
+          allowFontScaling={true}
+          disabled={false}
+          ellipsizeMode="tail"
+          style={
+            Array [
+              Object {},
+              Object {
+                "fontFamily": "Courier New",
+                "fontSize": 14,
+              },
+            ]
+          }
+        >
+          <Text
+            accessible={true}
+            allowFontScaling={true}
+            disabled={false}
+            ellipsizeMode="tail"
+            style={Object {}}
+          >
+            foo
+          </Text>
+        </Text>
+      </View>
+    </View>
+  </View>
+</RCTScrollView>
+`;

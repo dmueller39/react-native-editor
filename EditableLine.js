@@ -24,23 +24,12 @@ type State = {
 };
 
 type Props = {
-  selection: ?{
-    start: number,
-    end: number,
-  },
   text: string,
   onChangeActiveLine: (string) => void,
   onDeleteNewline: () => void,
 };
 
 export default class EditableLine extends PureComponent<void, Props, State> {
-  constructor(props: Props) {
-    super();
-    if (props.selection != null) {
-      this.state = { selection: props.selection };
-    }
-  }
-
   state: State = {
     selection: {
       start: 0,
