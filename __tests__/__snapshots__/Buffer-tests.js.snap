@@ -47,7 +47,6 @@ exports[`renders correctly 1`] = `
   onSelectWord={[Function]}
   onViewableItemsChanged={[Function]}
   renderItem={[Function]}
-  renderScrollComponent={[Function]}
   scrollEventThrottle={50}
   selectedLineIndex={null}
   selectedLocation={null}
@@ -61,6 +60,7 @@ exports[`renders correctly 1`] = `
   <View>
     <View
       onLayout={undefined}
+      style={null}
     >
       <View
         accessibilityComponentType={undefined}

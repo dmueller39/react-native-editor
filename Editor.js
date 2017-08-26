@@ -4,9 +4,7 @@ import React, { Component } from 'react';
 import { StyleSheet, KeyboardAvoidingView } from 'react-native';
 
 import _ from 'underscore';
-import {
-  type StyleObj,
-} from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
+import { type StyleObj } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 
 import Buffer from './Buffer';
 import ControlBar from './ControlBar';
@@ -17,6 +15,13 @@ import { COMMANDS } from './constants';
 
 import { type RawLocation } from './types';
 
+import {
+  getNextLocation,
+  getPreviousLocation,
+  getStartOfLineIndex,
+  getDataWithReplaceWord,
+} from './util';
+
 const styles = StyleSheet.create({
   buffer: {
     overflow: 'hidden',
@@ -25,95 +30,6 @@ const styles = StyleSheet.create({
     height: 44,
   },
 });
-
-export function getMatchLocations(
-  haystack: string,
-  word: string,
-  lineIndex: number
-) {
-  let index = haystack.indexOf(word);
-  if (index === -1) {
-    return [];
-  }
-  let fromIndex = 0;
-  const locations = [];
-  while (index !== -1) {
-    fromIndex = word.length + index;
-    locations.push({
-      start: index,
-      end: fromIndex,
-      lineIndex,
-    });
-    index = haystack.indexOf(word, fromIndex);
-  }
-  return locations;
-}
-
-function getAllMatchLocations(word: string, haystack: string) {
-  return _.flatten(
-    _.map(haystack.split('\n'), (line, index) =>
-      getMatchLocations(line, word, index))
-  );
-}
-
-function getNextLocation(
-  word: string,
-  location: RawLocation,
-  haystack: string
-) {
-  const locations = getAllMatchLocations(word, haystack);
-  if (location === null) {
-    return locations[0];
-  }
-  const nextLocation = _.find(
-    locations,
-    l =>
-      l.lineIndex > location.lineIndex ||
-      (l.lineIndex === location.lineIndex && l.start > location.start)
-  );
-  return nextLocation || locations[0];
-}
-
-function getPreviousLocation(
-  word: string,
-  location: RawLocation,
-  haystack: string
-) {
-  const locations = getAllMatchLocations(word, haystack).reverse();
-  if (location === null) {
-    return locations[0];
-  }
-  const nextLocation = _.find(
-    locations,
-    l =>
-      l.lineIndex < location.lineIndex ||
-      (l.lineIndex === location.lineIndex && l.start < location.start)
-  );
-  return nextLocation || locations[0];
-}
-
-function getDataWithReplaceWord(
-  replacementWord: string,
-  selectedLocation: RawLocation,
-  data: string
-) {
-  const lines = data.split('\n').slice(0, selectedLocation.lineIndex);
-  const newlineCharacterCount = selectedLocation.lineIndex;
-  const charactersBeforeLine: number = lines
-    .map(line => line.length)
-    .reduce((sum, length) => length + sum, 0) + newlineCharacterCount;
-  const start = charactersBeforeLine + selectedLocation.start;
-  const end = charactersBeforeLine + selectedLocation.end;
-
-  return data.slice(0, start) + replacementWord + data.slice(end);
-}
-
-function getStartOfLineIndex(index: number, lines: Array<string>): number {
-  return lines
-    .slice(0, index)
-    .map(line => line.length + 1)
-    .reduce((sum, el) => sum + el, 0);
-}
 
 const defaultProps = {
   data: '',
@@ -126,7 +42,7 @@ type Props = {
     width: number,
   },
   data: string,
-  onUpdateData: () => {},
+  onUpdateData: () => void,
   style?: ?StyleObj,
 };
 

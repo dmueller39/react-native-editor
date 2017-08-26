@@ -1,4 +1,7 @@
 // @flow
+
+import _ from 'underscore';
+
 import {
   type TextSection,
   type Lines,
@@ -26,10 +29,10 @@ export function getTextSubsections(
 
   textSections.forEach(section => {
     const beginsInSection = section.start <= index && index < section.end;
-    const endsInSection = section.start < index + length &&
-      index + length <= section.end;
-    const overlapsSection = index <= section.start &&
-      section.end <= index + length;
+    const endsInSection =
+      section.start < index + length && index + length <= section.end;
+    const overlapsSection =
+      index <= section.start && section.end <= index + length;
     const doesIntersect = beginsInSection || endsInSection || overlapsSection;
 
     if (doesIntersect) {
@@ -74,7 +77,8 @@ export function getTextSections(
       });
     }
     fromIndex = selectedWord.length + index;
-    const isCurrent = selectedLocation != null &&
+    const isCurrent =
+      selectedLocation != null &&
       lineIndex === selectedLocation.lineIndex &&
       index === selectedLocation.start;
     sections.push({
@@ -104,6 +108,9 @@ export function processLines(
   selectedLineIndex: ?number,
   activeLineText: ?string
 ): Lines {
+  if (width < CHARACTER_WIDTH) {
+    throw new Error('invalid width provided');
+  }
   const maxCharacters = Math.floor(width / CHARACTER_WIDTH);
   const combinedLines: Array<Line | Lines> = data
     .split('\n')
@@ -142,8 +149,8 @@ export function processLines(
       const entries: Lines = [];
       while (index < text.length) {
         const continuing = index > 0;
-        const maxLength = maxCharacters -
-          (continuing ? CONTINUING_STRING.length : 0);
+        const maxLength =
+          maxCharacters - (continuing ? CONTINUING_STRING.length : 0);
         const continued = index + maxLength < text.length;
         const length = maxLength - (continued ? CONTINUED_STRING.length : 0);
         entries.push({
@@ -176,4 +183,97 @@ export function processLines(
 
 export function getLineLayout(data: string, index: number) {
   return { length: CHARACTER_HEIGHT, offset: index * CHARACTER_HEIGHT, index };
+}
+
+export function getMatchLocations(
+  haystack: string,
+  word: string,
+  lineIndex: number
+) {
+  let index = haystack.indexOf(word);
+  if (index === -1) {
+    return [];
+  }
+  let fromIndex = 0;
+  const locations = [];
+  while (index !== -1) {
+    fromIndex = word.length + index;
+    locations.push({
+      start: index,
+      end: fromIndex,
+      lineIndex,
+    });
+    index = haystack.indexOf(word, fromIndex);
+  }
+  return locations;
+}
+
+export function getAllMatchLocations(word: string, haystack: string) {
+  return _.flatten(
+    _.map(haystack.split('\n'), (line, index) =>
+      getMatchLocations(line, word, index)
+    )
+  );
+}
+
+export function getNextLocation(
+  word: string,
+  location: RawLocation,
+  haystack: string
+) {
+  const locations = getAllMatchLocations(word, haystack);
+  if (location === null) {
+    return locations[0];
+  }
+  const nextLocation = _.find(
+    locations,
+    l =>
+      l.lineIndex > location.lineIndex ||
+      (l.lineIndex === location.lineIndex && l.start > location.start)
+  );
+  return nextLocation || locations[0];
+}
+
+export function getPreviousLocation(
+  word: string,
+  location: RawLocation,
+  haystack: string
+) {
+  const locations = getAllMatchLocations(word, haystack).reverse();
+  if (location === null) {
+    return locations[0];
+  }
+  const nextLocation = _.find(
+    locations,
+    l =>
+      l.lineIndex < location.lineIndex ||
+      (l.lineIndex === location.lineIndex && l.start < location.start)
+  );
+  return nextLocation || locations[0];
+}
+
+export function getDataWithReplaceWord(
+  replacementWord: string,
+  selectedLocation: RawLocation,
+  data: string
+) {
+  const lines = data.split('\n').slice(0, selectedLocation.lineIndex);
+  const newlineCharacterCount = selectedLocation.lineIndex;
+  const charactersBeforeLine: number =
+    lines.map(line => line.length).reduce((sum, length) => length + sum, 0) +
+    newlineCharacterCount;
+  const start = charactersBeforeLine + selectedLocation.start;
+  const end = charactersBeforeLine + selectedLocation.end;
+
+  return data.slice(0, start) + replacementWord + data.slice(end);
+}
+
+export function getStartOfLineIndex(
+  index: number,
+  lines: Array<string>
+): number {
+  return lines
+    .slice(0, index)
+    .map(line => line.length + 1)
+    .reduce((sum, el) => sum + el, 0);
 }

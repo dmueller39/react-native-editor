@@ -19,17 +19,17 @@ const defaultProps = {
   selectedLineIndex: null,
   activeLineText: null,
   data: '',
-  width: 0,
+  width: 320,
   selectedLocation: null,
 };
 
 type DefaultProps = typeof defaultProps;
 
 type Props = {
-  onSelectLine: (number) => void,
+  onSelectLine: number => void,
   onSelectWord: (string, RawLocation) => void,
   onSelectSelectedWord: () => void,
-  onChangeActiveLine: (string) => void,
+  onChangeActiveLine: string => void,
   onDeleteNewline: () => void,
   data: string,
   selectedWord: ?string,
@@ -44,14 +44,15 @@ export default class Buffer extends PureComponent<DefaultProps, Props, void> {
 
   constructor(props: Props) {
     super();
-    this.lines = processLines(
-      props.data,
-      props.width,
-      props.selectedWord,
-      props.selectedLocation,
-      props.selectedLineIndex,
-      props.activeLineText
-    );
+    if (props.width)
+      this.lines = processLines(
+        props.data,
+        props.width,
+        props.selectedWord,
+        props.selectedLocation,
+        props.selectedLineIndex,
+        props.activeLineText
+      );
   }
 
   componentWillReceiveProps(nextProps: Props) {
