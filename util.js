@@ -7,6 +7,7 @@ import {
   type Lines,
   type Line,
   type RawLocation,
+  type Location,
 } from './types';
 
 import {
@@ -14,6 +15,7 @@ import {
   CONTINUING_STRING,
   CHARACTER_WIDTH,
   CHARACTER_HEIGHT,
+  CHARACTER_REGEXP,
 } from './constants';
 
 export function getTextOnlySection(text: string): Array<TextSection> {
@@ -29,10 +31,10 @@ export function getTextSubsections(
 
   textSections.forEach(section => {
     const beginsInSection = section.start <= index && index < section.end;
-    const endsInSection =
-      section.start < index + length && index + length <= section.end;
-    const overlapsSection =
-      index <= section.start && section.end <= index + length;
+    const endsInSection = section.start < index + length &&
+      index + length <= section.end;
+    const overlapsSection = index <= section.start &&
+      section.end <= index + length;
     const doesIntersect = beginsInSection || endsInSection || overlapsSection;
 
     if (doesIntersect) {
@@ -77,8 +79,7 @@ export function getTextSections(
       });
     }
     fromIndex = selectedWord.length + index;
-    const isCurrent =
-      selectedLocation != null &&
+    const isCurrent = selectedLocation != null &&
       lineIndex === selectedLocation.lineIndex &&
       index === selectedLocation.start;
     sections.push({
@@ -108,10 +109,11 @@ export function processLines(
   selectedLineIndex: ?number,
   activeLineText: ?string
 ): Lines {
-  if (width < CHARACTER_WIDTH) {
+  const maxCharacters = Math.floor(width / CHARACTER_WIDTH);
+  // the math gets messed up if the maxCharacters is too small
+  if (maxCharacters - CONTINUED_STRING.length - CONTINUING_STRING.length < 1) {
     throw new Error('invalid width provided');
   }
-  const maxCharacters = Math.floor(width / CHARACTER_WIDTH);
   const combinedLines: Array<Line | Lines> = data
     .split('\n')
     .map((text, rawLineIndex) => {
@@ -127,6 +129,7 @@ export function processLines(
           textSections: [],
         };
       }
+
       const textSections = getTextSections(
         text,
         selectedWord,
@@ -147,10 +150,11 @@ export function processLines(
       }
       let index = 0;
       const entries: Lines = [];
+
       while (index < text.length) {
         const continuing = index > 0;
-        const maxLength =
-          maxCharacters - (continuing ? CONTINUING_STRING.length : 0);
+        const maxLength = maxCharacters -
+          (continuing ? CONTINUING_STRING.length : 0);
         const continued = index + maxLength < text.length;
         const length = maxLength - (continued ? CONTINUED_STRING.length : 0);
         entries.push({
@@ -211,8 +215,7 @@ export function getMatchLocations(
 export function getAllMatchLocations(word: string, haystack: string) {
   return _.flatten(
     _.map(haystack.split('\n'), (line, index) =>
-      getMatchLocations(line, word, index)
-    )
+      getMatchLocations(line, word, index))
   );
 }
 
@@ -259,9 +262,9 @@ export function getDataWithReplaceWord(
 ) {
   const lines = data.split('\n').slice(0, selectedLocation.lineIndex);
   const newlineCharacterCount = selectedLocation.lineIndex;
-  const charactersBeforeLine: number =
-    lines.map(line => line.length).reduce((sum, length) => length + sum, 0) +
-    newlineCharacterCount;
+  const charactersBeforeLine: number = lines
+    .map(line => line.length)
+    .reduce((sum, length) => length + sum, 0) + newlineCharacterCount;
   const start = charactersBeforeLine + selectedLocation.start;
   const end = charactersBeforeLine + selectedLocation.end;
 
@@ -276,4 +279,142 @@ export function getStartOfLineIndex(
     .slice(0, index)
     .map(line => line.length + 1)
     .reduce((sum, el) => sum + el, 0);
+}
+
+// map from locations based on the items that can be line wrapped
+// to locations based on the original data separated by newlines
+export function getRawLocation(
+  locations: Array<Location>,
+  item: Line,
+  itemIndex: number
+) {
+  let length = 0;
+  let offsetStart = 0;
+  locations.forEach(location => {
+    if (location.lineIndex < itemIndex) {
+      offsetStart -= location.length;
+    }
+    length += location.length;
+  });
+
+  if (offsetStart === 0) {
+    offsetStart = locations[0].start;
+  }
+
+  const start = item.start + offsetStart;
+  return {
+    start,
+    end: start + length,
+    lineIndex: item.rawLineIndex,
+  };
+}
+
+export const isCharacterIndexSelectedWord = (
+  characterIndex: number,
+  textSections: Array<TextSection>
+): boolean =>
+  textSections.find(
+    textSection =>
+      textSection.highlight === 'current' &&
+      textSection.start <= characterIndex &&
+      characterIndex < textSection.end
+  ) !== undefined;
+
+// returns the start index, the length, and if the word goes to the end of the
+// string
+export function locateWord(text: string, index: number) {
+  if (!CHARACTER_REGEXP.test(text.charAt(index))) {
+    return {
+      hasWord: false,
+      start: -1,
+      length: 0,
+      nextLinePossible: false,
+      previousLinePossible: false,
+    };
+  }
+  // start is the index of the first character that IS a word character
+  // minimum value is 0
+  let start = index;
+  while (start > 0 && CHARACTER_REGEXP.test(text.charAt(start - 1))) {
+    start -= 1;
+  }
+  // endIndex is the index of the first character, greater than start
+  // that IS NOT a word character. maximum value is text.length
+  let endIndex = index + 1;
+  while (
+    endIndex < text.length && CHARACTER_REGEXP.test(text.charAt(endIndex))
+  ) {
+    endIndex += 1;
+  }
+  return {
+    hasWord: true,
+    start,
+    length: endIndex - start,
+    nextLinePossible: endIndex === text.length,
+    previousLinePossible: start === 0,
+  };
+}
+
+export function multilineLocateWord(
+  characterIndex: number,
+  lineIndex: number,
+  lines: Lines
+) {
+  let startLine = lines[lineIndex];
+  const { text } = startLine;
+
+  if (!(characterIndex < text.length)) {
+    return { word: null, locations: [] };
+  }
+
+  let startLocation = locateWord(text, characterIndex);
+
+  if (!startLocation.hasWord) {
+    return { word: null, locations: [] };
+  }
+
+  let startLineIndex = lineIndex;
+  let hasPrev = startLine.continuing && startLocation.previousLinePossible;
+  while (hasPrev) {
+    const prevLine = lines[startLineIndex - 1];
+    const prevLocation = locateWord(prevLine.text, prevLine.text.length - 1);
+    if (prevLocation.hasWord) {
+      startLocation = prevLocation;
+      startLine = prevLine;
+      startLineIndex -= 1;
+      hasPrev = prevLine.continuing && prevLocation.previousLinePossible;
+    }
+  }
+
+  let word = '';
+
+  const locations = [];
+
+  let hasMore = true;
+  let nextLineIndex = startLineIndex;
+  let nextCharacterIndex = startLocation.start;
+  while (hasMore) {
+    const nextLine = lines[nextLineIndex];
+    const nextLocation = locateWord(nextLine.text, nextCharacterIndex);
+    if (nextLocation.hasWord) {
+      locations.push({
+        start: nextLocation.start,
+        length: nextLocation.length,
+        lineIndex: nextLineIndex,
+      });
+      word = word.concat(
+        nextLine.text.substr(nextLocation.start, nextLocation.length)
+      );
+    }
+    hasMore = nextLocation.hasWord &&
+      nextLocation.nextLinePossible &&
+      nextLine.continued;
+    nextCharacterIndex = 0;
+    nextLineIndex += 1;
+  }
+
+  return {
+    word,
+    locations,
+  };
 }
