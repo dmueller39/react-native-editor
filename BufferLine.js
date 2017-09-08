@@ -10,7 +10,7 @@ import {
 
 import {
   type TextSection,
-  type Location,
+  type BufferLocation,
   type Lines,
   type Line,
   type PressEvent,
@@ -53,11 +53,9 @@ type Props = {
   item: Line,
   index: number,
   lines: Lines,
-  onSelectLine: (number) => void,
+  onSelectLine: (Line) => void,
   // FIXME use a single type for describing a location
   onSelectWord: (string, RawLocation) => void,
-  onSelectSelectedWord: () => void,
-  selectedLineIndex: ?number,
 };
 
 export default class BufferLine extends PureComponent<void, Props, void> {
@@ -67,7 +65,6 @@ export default class BufferLine extends PureComponent<void, Props, void> {
       index,
       lines,
       onSelectWord,
-      onSelectSelectedWord,
       onSelectLine,
       item: { textSections },
     } = this.props;
@@ -86,11 +83,6 @@ export default class BufferLine extends PureComponent<void, Props, void> {
       (evt.nativeEvent.locationX - continuingOffset) / CHARACTER_WIDTH
     );
 
-    if (isCharacterIndexSelectedWord(characterIndex, textSections)) {
-      onSelectSelectedWord();
-      return;
-    }
-
     const { word, locations } = multilineLocateWord(
       characterIndex,
       index,
@@ -103,13 +95,12 @@ export default class BufferLine extends PureComponent<void, Props, void> {
       return;
     }
 
-    onSelectLine(item.rawLineIndex);
+    onSelectLine(item);
   };
 
   render() {
     const {
-      item: { continuing, continued, textSections, rawLineIndex },
-      selectedLineIndex,
+      item: { continuing, continued, textSections, rawLineIndex, isSelected },
     } = this.props;
 
     const textComponents = textSections.map(textSection => {
@@ -137,9 +128,7 @@ export default class BufferLine extends PureComponent<void, Props, void> {
       );
     }
 
-    const lineStyle = rawLineIndex === selectedLineIndex
-      ? styles.selectedLine
-      : styles.line;
+    const lineStyle = isSelected ? styles.selectedLine : styles.line;
 
     return (
       <TouchableWithoutFeedback onPress={this.onLinePress}>

@@ -7,7 +7,7 @@ import {
   type Lines,
   type Line,
   type RawLocation,
-  type Location,
+  type BufferLocation,
 } from './types';
 
 import {
@@ -101,88 +101,216 @@ export function getTextSections(
   return sections;
 }
 
-export function processLines(
-  data: string,
-  width: number,
+export function processLine(
+  text: string,
+  rawLineIndex: number,
+  maxCharacters: number,
   selectedWord: ?string,
   selectedLocation: ?RawLocation,
   selectedLineIndex: ?number,
-  activeLineText: ?string
+  isEditing: boolean
 ): Lines {
+  const isSelected = rawLineIndex === selectedLineIndex;
+  if (rawLineIndex === selectedLineIndex && isEditing) {
+    return [
+      {
+        start: 0,
+        text,
+        rawLineIndex,
+        isEditing: true,
+        continuing: false,
+        continued: false,
+        textSections: [],
+        isSelected,
+      },
+    ];
+  }
+
+  const textSections = getTextSections(
+    text,
+    selectedWord,
+    selectedLocation,
+    rawLineIndex
+  );
+  if (text.length <= maxCharacters) {
+    return [
+      {
+        text,
+        textSections,
+        rawLineIndex,
+        start: 0,
+        end: text.length,
+        continuing: false,
+        continued: false,
+        isEditing: false,
+        isSelected,
+      },
+    ];
+  }
+  let index = 0;
+  const entries: Lines = [];
+
+  while (index < text.length) {
+    const continuing = index > 0;
+    const maxLength = maxCharacters -
+      (continuing ? CONTINUING_STRING.length : 0);
+    const continued = index + maxLength < text.length;
+    const length = maxLength - (continued ? CONTINUED_STRING.length : 0);
+    entries.push({
+      text: text.substr(index, length),
+      textSections: getTextSubsections(textSections, index, length),
+      continued,
+      continuing,
+      rawLineIndex,
+      start: index,
+      end: index + length,
+      isEditing: false,
+      isSelected,
+    });
+    index += length;
+  }
+  return entries;
+}
+
+export function getMaxCharacters(width: number): number {
   const maxCharacters = Math.floor(width / CHARACTER_WIDTH);
   // the math gets messed up if the maxCharacters is too small
   if (maxCharacters - CONTINUED_STRING.length - CONTINUING_STRING.length < 1) {
     throw new Error('invalid width provided');
   }
-  const combinedLines: Array<Line | Lines> = data
-    .split('\n')
-    .map((text, rawLineIndex) => {
-      if (rawLineIndex === selectedLineIndex && activeLineText != null) {
-        return {
-          start: 0,
-          text,
-          rawLineIndex,
-          activeLineText,
-          isEditing: true,
-          continuing: false,
-          continued: false,
-          textSections: [],
-        };
-      }
+  return maxCharacters;
+}
 
-      const textSections = getTextSections(
+export function processLines(
+  data: string,
+  maxCharacters: number,
+  selectedWord: ?string,
+  selectedLocation: ?RawLocation,
+  selectedLineIndex: ?number,
+  isEditing: boolean
+): Lines {
+  const combinedLines: Array<Lines> = data
+    .split('\n')
+    .map((text, rawLineIndex) =>
+      processLine(
         text,
+        rawLineIndex,
+        maxCharacters,
         selectedWord,
         selectedLocation,
-        rawLineIndex
-      );
-      if (text.length <= maxCharacters) {
-        return {
-          text,
-          textSections,
-          rawLineIndex,
-          start: 0,
-          end: text.length,
-          continuing: false,
-          continued: false,
-          activeLineText,
-        };
-      }
-      let index = 0;
-      const entries: Lines = [];
-
-      while (index < text.length) {
-        const continuing = index > 0;
-        const maxLength = maxCharacters -
-          (continuing ? CONTINUING_STRING.length : 0);
-        const continued = index + maxLength < text.length;
-        const length = maxLength - (continued ? CONTINUED_STRING.length : 0);
-        entries.push({
-          text: text.substr(index, length),
-          textSections: getTextSubsections(textSections, index, length),
-          continued,
-          continuing,
-          rawLineIndex,
-          start: index,
-          end: index + length,
-          activeLineText,
-        });
-        index += length;
-      }
-      return entries;
-    });
+        selectedLineIndex,
+        isEditing
+      ));
   const flattened: Lines = [];
   combinedLines.forEach(item => {
-    if (Array.isArray(item)) {
-      item.forEach(subitem => {
-        flattened.push(subitem);
-      });
-    } else {
-      flattened.push(item);
-    }
+    item.forEach(subitem => {
+      flattened.push(subitem);
+    });
   });
-  // TODO resolve this
   return flattened;
+}
+
+export function updateLinesWithActiveText(
+  lines: Lines,
+  text: string,
+  width: number,
+  selectedWord: ?string,
+  selectedLocation: ?RawLocation
+): Lines {
+  const selectedLineIndex = lines.findIndex((line: Line) => line.isEditing);
+  if (selectedLineIndex < 0) {
+    return lines;
+  }
+
+  if (text.includes('\n')) {
+    const pieces = text.split('\n');
+
+    const maxCharacters = getMaxCharacters(width);
+
+    const lines1 = processLine(
+      pieces[0],
+      selectedLineIndex,
+      maxCharacters,
+      selectedWord,
+      selectedLocation,
+      selectedLineIndex + 1,
+      true
+    );
+
+    const line2 = {
+      start: 0,
+      text: pieces[1],
+      rawLineIndex: selectedLineIndex + 1,
+      isEditing: true,
+      continuing: false,
+      continued: false,
+      isSelected: true,
+      textSections: [],
+    };
+
+    const pre = lines.slice(0, selectedLineIndex);
+
+    const post = lines.slice(selectedLineIndex + 1).map(line => ({
+      ...line,
+      rawLineIndex: line.rawLineIndex + 1,
+    }));
+
+    return [...pre, ...lines1, line2, ...post];
+  }
+
+  const line = {
+    start: 0,
+    text,
+    rawLineIndex: selectedLineIndex,
+    isEditing: true,
+    continuing: false,
+    continued: false,
+    isSelected: true,
+    textSections: [],
+  };
+
+  const pre = lines.slice(0, selectedLineIndex);
+
+  const post = lines.slice(selectedLineIndex + 1);
+
+  return [...pre, line, ...post];
+}
+
+export function updateLinesByDeletingNewline(
+  lines: Lines,
+  width: number,
+  selectedWord: ?string,
+  selectedLocation: ?RawLocation
+): Lines {
+  const selectedLineIndex = lines.findIndex((line: Line) => line.isEditing);
+  if (selectedLineIndex < 1) {
+    return lines;
+  }
+
+  const line1 = lines[selectedLineIndex - 1];
+  const line2 = lines[selectedLineIndex];
+
+  const text = line1.text + line2.text;
+
+  const line = {
+    start: 0,
+    text,
+    rawLineIndex: selectedLineIndex - 1,
+    isEditing: true,
+    continuing: false,
+    continued: false,
+    textSections: [],
+    isSelected: true,
+  };
+
+  const pre = lines.slice(0, selectedLineIndex - 1);
+
+  const post = lines.slice(selectedLineIndex + 1).map(line => ({
+    ...line,
+    rawLineIndex: line.rawLineIndex - 1,
+  }));
+
+  return [...pre, line, ...post];
 }
 
 export function getLineLayout(data: string, index: number) {
@@ -284,7 +412,7 @@ export function getStartOfLineIndex(
 // map from locations based on the items that can be line wrapped
 // to locations based on the original data separated by newlines
 export function getRawLocation(
-  locations: Array<Location>,
+  locations: Array<BufferLocation>,
   item: Line,
   itemIndex: number
 ) {

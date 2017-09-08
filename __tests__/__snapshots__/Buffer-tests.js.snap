@@ -2,14 +2,14 @@
 
 exports[`renders correctly 1`] = `
 <RCTScrollView
-  activeLineText={null}
   data={
     Array [
       Object {
-        "activeLineText": null,
         "continued": false,
         "continuing": false,
         "end": 3,
+        "isEditing": false,
+        "isSelected": false,
         "rawLineIndex": 0,
         "start": 0,
         "text": "foo",
@@ -30,12 +30,12 @@ exports[`renders correctly 1`] = `
   getItemLayout={[Function]}
   horizontal={false}
   initialNumToRender={10}
+  isEditing={false}
   keyExtractor={[Function]}
   maxToRenderPerBatch={10}
   numColumns={1}
-  onChangeActiveLine={[Function]}
+  onChangeData={[Function]}
   onContentSizeChange={[Function]}
-  onDeleteNewline={[Function]}
   onEndReachedThreshold={2}
   onLayout={[Function]}
   onMomentumScrollEnd={[Function]}
@@ -43,7 +43,6 @@ exports[`renders correctly 1`] = `
   onScrollBeginDrag={[Function]}
   onScrollEndDrag={[Function]}
   onSelectLine={[Function]}
-  onSelectSelectedWord={[Function]}
   onSelectWord={[Function]}
   onViewableItemsChanged={[Function]}
   renderItem={[Function]}

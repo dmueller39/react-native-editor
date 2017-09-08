@@ -12,15 +12,13 @@ it('renders correctly', () => {
     <Buffer
       onSelectLine={() => {}}
       onSelectWord={() => {}}
-      onSelectSelectedWord={() => {}}
-      onChangeActiveLine={() => {}}
-      onDeleteNewline={() => {}}
+      onChangeData={() => {}}
       data="foo"
       selectedWord={null}
       selectedLineIndex={null}
-      activeLineText={null}
       width={320}
       selectedLocation={null}
+      isEditing={false}
     />
   );
 

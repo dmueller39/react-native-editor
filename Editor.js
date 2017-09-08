@@ -4,7 +4,9 @@ import React, { Component } from 'react';
 import { StyleSheet, KeyboardAvoidingView } from 'react-native';
 
 import _ from 'underscore';
-import { type StyleObj } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
+import {
+  type StyleObj,
+} from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 
 import Buffer from './Buffer';
 import ControlBar from './ControlBar';
@@ -52,7 +54,6 @@ type State = {
   selectedLocation?: ?RawLocation,
   selectedLineIndex?: ?number,
   command?: ?string,
-  activeLineText?: ?string,
   replacementWord?: ?string,
   goToLineText?: ?string,
   selectedLineTimestamp?: ?number,
@@ -73,6 +74,8 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   componentDidUpdate() {
     this.props.onUpdateData(this.state.data);
   }
+
+  onChangeData = () => {};
 
   onPressNextSelection() {
     const { data, selectedWord } = this.state;
@@ -112,9 +115,9 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   }
 
   onPressDone() {
-    const { selectedLineIndex, activeLineText } = this.state;
+    const { selectedLineIndex } = this.state;
     let { data } = this.state;
-    if (selectedLineIndex == null || data == null || activeLineText == null) {
+    if (selectedLineIndex == null || data == null) {
       return;
     }
     // when we see a new line, we handle this as a committed action,
@@ -124,13 +127,14 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     const start = getStartOfLineIndex(selectedLineIndex, lines);
     const end = start + lines[selectedLineIndex].length;
     // poor mans redux :)
-    const action = replaceRange(data, start, end, activeLineText);
+
+    // FIXME get atomic changes from Buffer
+    const action = replaceRange(data, start, end, '');
     data = text({ data }, action).data;
 
     this.setState({
       data,
       command: COMMANDS.selectedLine,
-      activeLineText: null,
     });
   }
 
@@ -157,7 +161,6 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     ) {
       this.setState({
         command: COMMANDS.selectedWord,
-        activeLineText: null,
       });
     } else {
       this.setState({
@@ -165,12 +168,11 @@ export default class Editor extends Component<DefaultProps, Props, State> {
         selectedLocation: null,
         selectedWord: null,
         selectedLineIndex: null,
-        activeLineText: null,
       });
     }
   }
 
-  onSelectLine(selectedLineIndex: number) {
+  onSelectLine = (selectedLineIndex: number) => {
     const selectedLineTimestamp = +new Date();
     this.setState((oldState: State) => {
       const { data } = oldState;
@@ -182,15 +184,12 @@ export default class Editor extends Component<DefaultProps, Props, State> {
         oldState.selectedLineIndex === selectedLineIndex &&
         selectedLineTimestamp - (oldState.selectedLineTimestamp || 0) < 1000
       ) {
-        const activeLineText = data.split('\n')[selectedLineIndex];
         return {
           command: COMMANDS.insert,
-          activeLineText,
           selectedLineIndex,
         };
       }
       return {
-        activeLineText: null,
         selectedLineTimestamp,
         selectedLineIndex,
         command: COMMANDS.selectedLine,
@@ -198,16 +197,16 @@ export default class Editor extends Component<DefaultProps, Props, State> {
         selectedLocation: null,
       };
     });
-  }
+  };
 
-  onSelectWord(word: string, location: RawLocation) {
+  onSelectWord = (word: string, location: RawLocation) => {
     this.setState({
       command: COMMANDS.selectedWord,
       selectedWord: word,
       selectedLocation: location,
       selectedLineIndex: null,
     });
-  }
+  };
 
   onSelectSelectedWord() {
     this.setState({
@@ -320,86 +319,10 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     if (data == null || selectedLineIndex == null) {
       return;
     }
-    const activeLineText = data.split('\n')[selectedLineIndex];
     this.setState({
       command: COMMANDS.insert,
-      activeLineText,
     });
   }
-
-  onChangeActiveLine(activeLineText: string) {
-    const activeLines = activeLineText.split('\n');
-    if (activeLines.length <= 1) {
-      this.setState({
-        activeLineText,
-      });
-      return;
-    }
-    let { data, selectedLineIndex } = this.state;
-    if (data == null || selectedLineIndex == null) {
-      return;
-    }
-    // when we see a new line, we handle this as a committed action,
-    // so that we are only ever editing a single line at a time
-    // this means that every individual newline action can be undone
-    const lines = data.split('\n');
-    // line.length + 1 because we split on newlines
-    const start = getStartOfLineIndex(selectedLineIndex, lines);
-    const end = start + lines[selectedLineIndex].length;
-    // poor mans redux :)
-    let replacement = activeLineText;
-    let newLineText = activeLines[1];
-    if (activeLines[1] === '') {
-      const spacing = activeLines[0].split(activeLines[0].trim())[0];
-      replacement += spacing;
-      newLineText += spacing;
-    }
-
-    const action = replaceRange(data, start, end, replacement);
-    data = text({ data }, action).data;
-
-    selectedLineIndex += 1;
-
-    this.setState({
-      selectedLineIndex,
-      activeLineText: newLineText,
-      data,
-    });
-  }
-
-  onDeleteNewline() {
-    let { selectedLineIndex, data } = this.state;
-    if (data == null || selectedLineIndex == null || selectedLineIndex === 0) {
-      return;
-    }
-
-    const lines = data.split('\n');
-
-    const end = getStartOfLineIndex(selectedLineIndex, lines);
-
-    const start = end - 1;
-    // poor mans redux :)
-    const action = replaceRange(data, start, end, '');
-    data = text({ data }, action).data;
-
-    selectedLineIndex -= 1;
-    const activeLineText = data.split('\n')[selectedLineIndex];
-
-    this.setState({
-      selectedLineIndex,
-      activeLineText,
-      data,
-    });
-  }
-
-  bufferActions = {
-    onSelectWord: (word: string, location: RawLocation) =>
-      this.onSelectWord(word, location),
-    onSelectSelectedWord: () => this.onSelectSelectedWord(),
-    onSelectLine: (index: number) => this.onSelectLine(index),
-    onChangeActiveLine: (t: string) => this.onChangeActiveLine(t),
-    onDeleteNewline: () => this.onDeleteNewline(),
-  };
 
   controlBarActions = {
     onPressNextSelection: () => this.onPressNextSelection(),
@@ -466,11 +389,16 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     return (
       <KeyboardAvoidingView style={[this.props.style]} behavior="padding">
         <Buffer
-          {...this.props}
-          {...this.state}
-          {...this.bufferActions}
+          onSelectWord={this.onSelectWord}
+          onSelectLine={this.onSelectLine}
+          onChangeData={this.onChangeData}
           style={styles.buffer}
           width={this.props.dimensions.width}
+          isEditing={this.state.command === COMMANDS.insert}
+          data={this.state.data}
+          selectedWord={this.state.selectedWord}
+          selectedLineIndex={this.state.selectedLineIndex}
+          selectedLocation={this.state.selectedLocation}
         />
         {this.renderTextInputBar()}
         <ControlBar

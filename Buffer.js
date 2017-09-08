@@ -12,59 +12,66 @@ import {
 import EditableLine from './EditableLine';
 import BufferLine from './BufferLine';
 
-import { processLines, getLineLayout } from './util';
+import {
+  processLines,
+  getLineLayout,
+  getMaxCharacters,
+  processLine,
+  updateLinesWithActiveText,
+  updateLinesByDeletingNewline,
+} from './util';
 
 const defaultProps = {
-  selectedWord: null,
-  selectedLineIndex: null,
-  activeLineText: null,
   data: '',
   width: 320,
-  selectedLocation: null,
 };
 
 type DefaultProps = typeof defaultProps;
 
 type Props = {
-  onSelectLine: number => void,
+  onSelectLine: (number) => void,
   onSelectWord: (string, RawLocation) => void,
-  onSelectSelectedWord: () => void,
-  onChangeActiveLine: string => void,
-  onDeleteNewline: () => void,
+  onChangeData: () => void,
   data: string,
+  width: number,
+  isEditing: boolean,
   selectedWord: ?string,
   selectedLineIndex: ?number,
-  activeLineText: ?string,
-  width: number,
   selectedLocation: ?RawLocation,
 };
 
-export default class Buffer extends PureComponent<DefaultProps, Props, void> {
+type State = {
+  lines: Lines,
+};
+
+export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   static defaultProps = defaultProps;
+  state = {
+    lines: [],
+  };
 
   constructor(props: Props) {
     super();
-    if (props.width)
-      this.lines = processLines(
-        props.data,
-        props.width,
-        props.selectedWord,
-        props.selectedLocation,
-        props.selectedLineIndex,
-        props.activeLineText
-      );
+
+    if (props.width > 0) {
+      const maxCharacters = getMaxCharacters(props.width);
+      this.state = {
+        lines: processLines(
+          props.data,
+          maxCharacters,
+          props.selectedWord,
+          props.selectedLocation,
+          props.selectedLineIndex,
+          props.isEditing
+        ),
+      };
+    }
   }
 
   componentWillReceiveProps(nextProps: Props) {
-    this.lines = processLines(
-      nextProps.data,
-      nextProps.width,
-      nextProps.selectedWord,
-      nextProps.selectedLocation,
-      nextProps.selectedLineIndex,
-      nextProps.activeLineText
-    );
+    this.updateLines(nextProps);
   }
+
   componentDidUpdate(prevProps: Props) {
     if (
       this.props.selectedLocation != null &&
@@ -82,12 +89,68 @@ export default class Buffer extends PureComponent<DefaultProps, Props, void> {
     }
   }
 
+  updateLines(props: Props) {
+    if (props.width > 0) {
+      const maxCharacters = getMaxCharacters(props.width);
+      this.setState(() => ({
+        lines: processLines(
+          props.data,
+          maxCharacters,
+          props.selectedWord,
+          props.selectedLocation,
+          props.selectedLineIndex,
+          props.isEditing
+        ),
+      }));
+    }
+  }
+
   onViewableItemsChanged = (info: { viewableItems: Array<{ item: Line }> }) => {
     this.viewableItems = info.viewableItems;
   };
 
+  onChangeActiveLine = (text: string) => {
+    const index = this.props.selectedLineIndex;
+    if (index == null) {
+      throw new Error(
+        'Cannot change a line when the selectedLineIndex is null'
+      );
+    }
+    this.setState((oldState: State) => {
+      return {
+        lines: updateLinesWithActiveText(
+          oldState.lines,
+          text,
+          this.props.width,
+          this.props.selectedWord,
+          this.props.selectedLocation
+        ),
+      };
+    });
+  };
+
+  onDeleteNewline = () => {
+    this.setState((oldState: State) => {
+      return {
+        lines: updateLinesByDeletingNewline(
+          oldState.lines,
+          this.props.width,
+          this.props.selectedWord,
+          this.props.selectedLocation
+        ),
+      };
+    });
+  };
+
+  onSelectLine = (line: Line) => {
+    this.props.onSelectLine(line.rawLineIndex);
+  };
+
+  onSelectWord = (word: string, location: RawLocation) => {
+    this.props.onSelectWord(word, location);
+  };
+
   flatListRef: FlatList<Line>;
-  lines: Lines = [];
   viewableItems: Array<{ item: Line }> = [];
   scrollToRawLineIndex(rawLineIndex: number) {
     const viewableSelectedItem = this.viewableItems.find(
@@ -96,7 +159,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, void> {
 
     // don't scroll if the line is already visible
     if (viewableSelectedItem == null) {
-      const index = this.lines.findIndex(
+      const index = this.state.lines.findIndex(
         line => line.rawLineIndex === rawLineIndex
       );
       this.flatListRef.scrollToIndex({
@@ -112,12 +175,12 @@ export default class Buffer extends PureComponent<DefaultProps, Props, void> {
   };
 
   renderItem = (param: { item: Line, index: number }) => {
-    if (param.item.isEditing && param.item.activeLineText != null) {
+    if (param.item.isEditing) {
       return (
         <EditableLine
-          onChangeActiveLine={this.props.onChangeActiveLine}
-          onDeleteNewline={this.props.onDeleteNewline}
-          text={param.item.activeLineText}
+          onChangeActiveLine={this.onChangeActiveLine}
+          onDeleteNewline={this.onDeleteNewline}
+          text={param.item.text}
         />
       );
     }
@@ -126,9 +189,8 @@ export default class Buffer extends PureComponent<DefaultProps, Props, void> {
         selectedLineIndex={this.props.selectedLineIndex}
         onSelectLine={this.props.onSelectLine}
         onSelectWord={this.props.onSelectWord}
-        onSelectSelectedWord={this.props.onSelectSelectedWord}
         {...param}
-        lines={this.lines}
+        lines={this.state.lines}
       />
     );
   };
@@ -143,7 +205,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, void> {
         showsVerticalScrollIndicator={false}
         keyExtractor={(item: void, index: number) => `line-${String(index)}`}
         windowSize={5}
-        data={this.lines}
+        data={this.state.lines}
         renderItem={this.renderItem}
       />
     );

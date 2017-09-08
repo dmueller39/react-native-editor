@@ -1,5 +1,5 @@
 // @flow
-export type Location = {
+export type BufferLocation = {
   lineIndex: number,
   start: number,
   length: number,
@@ -25,7 +25,8 @@ export type Line = {
   textSections: Array<TextSection>,
   continuing: boolean,
   continued: boolean,
-  activeLineText: ?string,
+  isEditing: boolean,
+  isSelected: boolean,
 };
 
 export type Lines = Array<Line>;
