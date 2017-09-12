@@ -20,7 +20,6 @@ import { type RawLocation } from './types';
 import {
   getNextLocation,
   getPreviousLocation,
-  getStartOfLineIndex,
   getDataWithReplaceWord,
 } from './util';
 
@@ -36,7 +35,6 @@ const styles = StyleSheet.create({
 const defaultProps = {
   data: '',
   onUpdateData: () => {},
-  style: null,
 };
 
 type Props = {
@@ -70,6 +68,12 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   }
 
   state: State = {};
+
+  bufferRef: ?Buffer = null;
+
+  captureBufferRef = (buffer: Buffer) => {
+    this.bufferRef = buffer;
+  };
 
   componentDidUpdate() {
     this.props.onUpdateData(this.state.data);
@@ -114,27 +118,41 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     this.setState({ selectedLineIndex });
   }
 
-  onPressDone() {
-    const { selectedLineIndex } = this.state;
-    let { data } = this.state;
-    if (selectedLineIndex == null || data == null) {
+  onPressInsertDone() {
+    const buffer = this.bufferRef;
+    if (buffer == null) {
       return;
     }
-    // when we see a new line, we handle this as a committed action,
-    // so that we are only ever editing a single line at a time
-    // this means that every individual newline action can be undone
-    const lines = data.split('\n');
-    const start = getStartOfLineIndex(selectedLineIndex, lines);
-    const end = start + lines[selectedLineIndex].length;
-    // poor mans redux :)
 
-    // FIXME get atomic changes from Buffer
-    const action = replaceRange(data, start, end, '');
-    data = text({ data }, action).data;
+    const initialData = this.state.data;
+
+    if (initialData == null) {
+      return;
+    }
+
+    const edits = buffer.getEdits();
+
+    // TODO clean this section up, and figure out exactly what is going on with
+    // ./text
+    const textState = edits.reduce(
+      (textState: { data: string }, edit) => {
+        const action = replaceRange(
+          textState.data,
+          edit.start,
+          edit.end,
+          edit.replacement
+        );
+        return text(textState, action);
+      },
+      { data: initialData }
+    );
+
+    const selectedLineIndex = buffer.getEditingLineIndex();
 
     this.setState({
-      data,
+      data: textState.data,
       command: COMMANDS.selectedLine,
+      selectedLineIndex,
     });
   }
 
@@ -277,6 +295,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     }
 
     const regex = RegExp(selectedWord, 'g');
+    // TODO handle this with ./text
     data = data.replace(regex, replacementWord);
 
     this.setState({
@@ -293,6 +312,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     if (data == null || selectedLocation == null) {
       return;
     }
+    // TODO handle this with ./text
     data = getDataWithReplaceWord(replacementWord, selectedLocation, data);
 
     this.setState({
@@ -336,7 +356,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     onPressEnterLine: () => this.onPressEnterLine(),
     onPressPreviousLine: () => this.onPressPreviousLine(),
     onPressNextLine: () => this.onPressNextLine(),
-    onPressDone: () => this.onPressDone(),
+    onPressInsertDone: () => this.onPressInsertDone(),
   };
 
   renderTextInputBar() {
@@ -389,6 +409,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     return (
       <KeyboardAvoidingView style={[this.props.style]} behavior="padding">
         <Buffer
+          ref={this.captureBufferRef}
           onSelectWord={this.onSelectWord}
           onSelectLine={this.onSelectLine}
           onChangeData={this.onChangeData}

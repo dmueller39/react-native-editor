@@ -37,7 +37,7 @@ type Props = {
     onPressNextLine: () => void,
     onPressPreviousLine: () => void,
     onPressX: () => void,
-    onPressDone: () => void,
+    onPressInsertDone: () => void,
     onPressSearch: () => void,
     onPressEnterLine: () => void,
     onPressReplaceAll: () => void,
@@ -54,7 +54,7 @@ const defaultProps = {
     onPressNextLine: () => {},
     onPressPreviousLine: () => {},
     onPressX: () => {},
-    onPressDone: () => {},
+    onPressInsertDone: () => {},
     onPressSearch: () => {},
     onPressEnterLine: () => {},
     onPressReplaceAll: () => {},
@@ -125,9 +125,8 @@ export default function ControlBar(props: Props) {
     case COMMANDS.insert:
       return (
         <View style={styles.container}>
-          <Button onPress={props.actions.onPressX} text="x" />
           <View style={styles.spacer} />
-          <Button onPress={props.actions.onPressDone} text="done" />
+          <Button onPress={props.actions.onPressInsertDone} text="done" />
         </View>
       );
     default:

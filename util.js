@@ -2,6 +2,8 @@
 
 import _ from 'underscore';
 
+import type { Edit } from './Edit';
+
 import {
   type TextSection,
   type Lines,
@@ -210,17 +212,31 @@ export function processLines(
   return flattened;
 }
 
-export function updateLinesWithActiveText(
+export function getEditingLineIndex(lines: Lines): ?number {
+  const index = lines.findIndex((line: Line) => line.isEditing);
+  if (index < 0) {
+    return null;
+  }
+  return index;
+}
+
+export function updateLinesWithEdit(
   lines: Lines,
-  text: string,
+  edit: Edit,
   width: number,
   selectedWord: ?string,
   selectedLocation: ?RawLocation
 ): Lines {
-  const selectedLineIndex = lines.findIndex((line: Line) => line.isEditing);
-  if (selectedLineIndex < 0) {
+  const selectedLineIndex = getEditingLineIndex(lines);
+  if (selectedLineIndex == null) {
     return lines;
   }
+
+  const originalText = lines[selectedLineIndex].text;
+
+  const text = originalText.substring(0, edit.start) +
+    edit.replacement +
+    originalText.substring(edit.end);
 
   if (text.includes('\n')) {
     const pieces = text.split('\n');
@@ -282,8 +298,8 @@ export function updateLinesByDeletingNewline(
   selectedWord: ?string,
   selectedLocation: ?RawLocation
 ): Lines {
-  const selectedLineIndex = lines.findIndex((line: Line) => line.isEditing);
-  if (selectedLineIndex < 1) {
+  const selectedLineIndex = getEditingLineIndex(lines);
+  if (selectedLineIndex == null || selectedLineIndex < 1) {
     return lines;
   }
 
@@ -397,16 +413,6 @@ export function getDataWithReplaceWord(
   const end = charactersBeforeLine + selectedLocation.end;
 
   return data.slice(0, start) + replacementWord + data.slice(end);
-}
-
-export function getStartOfLineIndex(
-  index: number,
-  lines: Array<string>
-): number {
-  return lines
-    .slice(0, index)
-    .map(line => line.length + 1)
-    .reduce((sum, el) => sum + el, 0);
 }
 
 // map from locations based on the items that can be line wrapped
@@ -544,5 +550,51 @@ export function multilineLocateWord(
   return {
     word,
     locations,
+  };
+}
+
+function getStartOfLine(lines: Lines, index: number): number {
+  const sublines = lines.slice(0, index);
+  const textLength = sublines.reduce(
+    (total: number, line: Line) => line.text.length + total,
+    0
+  );
+  const newlines = lines[index].rawLineIndex;
+  return textLength + newlines;
+}
+
+function getHasMatchingIndex(text1: string, text2: string, index: number) {
+  return index < text1.length &&
+    index < text2.length &&
+    text1[index] === text2[index];
+}
+
+export function getChangeTextEdit(lines: Lines, edit: Edit): ?Edit {
+  const editingLineIndex = getEditingLineIndex(lines);
+  if (editingLineIndex == null) {
+    return null;
+  }
+  const lineStart = getStartOfLine(lines, editingLineIndex);
+
+  return {
+    ...edit,
+    start: edit.start + lineStart,
+    end: edit.end + lineStart,
+  };
+}
+
+export function getDeleteLineEdit(lines: Lines): ?Edit {
+  const editingLineIndex = getEditingLineIndex(lines);
+  if (editingLineIndex == null || editingLineIndex < 1) {
+    return null;
+  }
+
+  const end = getStartOfLine(lines, editingLineIndex);
+  const start = end - 1;
+
+  return {
+    start,
+    end,
+    replacement: '',
   };
 }

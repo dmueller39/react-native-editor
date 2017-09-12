@@ -7,7 +7,7 @@ exports[`renders correctly 1`] = `
   style={
     Array [
       Array [
-        null,
+        undefined,
       ],
       Object {
         "paddingBottom": 0,

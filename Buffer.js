@@ -9,6 +9,8 @@ import {
   isLocationEqual,
 } from './types';
 
+import type { Edit } from './Edit';
+
 import EditableLine from './EditableLine';
 import BufferLine from './BufferLine';
 
@@ -17,8 +19,11 @@ import {
   getLineLayout,
   getMaxCharacters,
   processLine,
-  updateLinesWithActiveText,
+  updateLinesWithEdit,
   updateLinesByDeletingNewline,
+  getEditingLineIndex,
+  getChangeTextEdit,
+  getDeleteLineEdit,
 } from './util';
 
 const defaultProps = {
@@ -42,13 +47,17 @@ type Props = {
 
 type State = {
   lines: Lines,
+  edits: (?Edit)[],
 };
 
 export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   static defaultProps = defaultProps;
   state = {
     lines: [],
+    edits: [],
   };
+
+  editableLineRef: ?EditableLine = null;
 
   constructor(props: Props) {
     super();
@@ -56,6 +65,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     if (props.width > 0) {
       const maxCharacters = getMaxCharacters(props.width);
       this.state = {
+        edits: [],
         lines: processLines(
           props.data,
           maxCharacters,
@@ -69,7 +79,25 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   }
 
   componentWillReceiveProps(nextProps: Props) {
-    this.updateLines(nextProps);
+    if (nextProps.width > 0) {
+      const maxCharacters = getMaxCharacters(nextProps.width);
+      const didChangeIsEditing = nextProps.isEditing != this.props.isEditing;
+      this.setState(oldState => {
+        // reset the edits if isEditing changes value
+        const edits = didChangeIsEditing ? [] : oldState.edits;
+        return {
+          edits,
+          lines: processLines(
+            nextProps.data,
+            maxCharacters,
+            nextProps.selectedWord,
+            nextProps.selectedLocation,
+            nextProps.selectedLineIndex,
+            nextProps.isEditing
+          ),
+        };
+      });
+    }
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -89,64 +117,98 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     }
   }
 
-  updateLines(props: Props) {
-    if (props.width > 0) {
-      const maxCharacters = getMaxCharacters(props.width);
-      this.setState(() => ({
-        lines: processLines(
-          props.data,
-          maxCharacters,
-          props.selectedWord,
-          props.selectedLocation,
-          props.selectedLineIndex,
-          props.isEditing
-        ),
-      }));
+  captureEditableLineRef = (editableLine: EditableLine) => {
+    this.editableLineRef = editableLine;
+  };
+
+  getUpdatedStateWithRawEdits(state: State, rawEdits: Edit[]): State {
+    let lines = this.state.lines;
+
+    const partialEdits = rawEdits.map(edit => {
+      const absoluteEdit = getChangeTextEdit(lines, edit);
+      lines = updateLinesWithEdit(
+        lines,
+        edit,
+        this.props.width,
+        this.props.selectedWord,
+        this.props.selectedLocation
+      );
+      return absoluteEdit;
+    });
+    const edits = [...this.state.edits, ...partialEdits].filter(
+      edit => edit != null
+    );
+
+    return { edits, lines };
+  }
+
+  getUpdatedStateWithRef(state: State, editableLine: ?EditableLine): State {
+    if (editableLine == null) {
+      return state;
     }
+    return this.getUpdatedStateWithRawEdits(state, editableLine.getEdits());
+  }
+
+  getEdits(): Edit[] {
+    const state = this.getUpdatedStateWithRef(this.state, this.editableLineRef);
+    console.log(state.lines);
+    console.log(state.edits);
+    return state.edits;
+  }
+
+  getEditingLineIndex(): ?number {
+    return getEditingLineIndex(this.state.lines);
   }
 
   onViewableItemsChanged = (info: { viewableItems: Array<{ item: Line }> }) => {
     this.viewableItems = info.viewableItems;
   };
 
-  onChangeActiveLine = (text: string) => {
-    const index = this.props.selectedLineIndex;
-    if (index == null) {
-      throw new Error(
-        'Cannot change a line when the selectedLineIndex is null'
-      );
-    }
-    this.setState((oldState: State) => {
-      return {
-        lines: updateLinesWithActiveText(
-          oldState.lines,
-          text,
-          this.props.width,
-          this.props.selectedWord,
-          this.props.selectedLocation
-        ),
-      };
-    });
+  onChangeData = () => {
+    // TODO determine if its the right pattern to pass `this` here. (No?)
+    this.props.onChangeData();
   };
 
-  onDeleteNewline = () => {
-    this.setState((oldState: State) => {
-      return {
-        lines: updateLinesByDeletingNewline(
-          oldState.lines,
-          this.props.width,
-          this.props.selectedWord,
-          this.props.selectedLocation
-        ),
-      };
-    });
+  onCommitingEdit = (rawEdits: Edit[]) => {
+    this.setState(
+      (oldState: State) => this.getUpdatedStateWithRawEdits(oldState, rawEdits),
+      this.onChangeData
+    );
+  };
+
+  onDeleteNewline = (rawEdits: Edit[]) => {
+    this.setState(
+      (oldState: State) => {
+        const state = this.getUpdatedStateWithRawEdits(oldState, rawEdits);
+        return {
+          edits: [...state.edits, getDeleteLineEdit(state.lines)],
+          lines: updateLinesByDeletingNewline(
+            state.lines,
+            this.props.width,
+            this.props.selectedWord,
+            this.props.selectedLocation
+          ),
+        };
+      },
+      this.onChangeData
+    );
   };
 
   onSelectLine = (line: Line) => {
+    const editingLine = this.state.lines.find(line => line.isEditing);
+    if (editingLine != null) {
+      // TODO if editing start editing selected line
+      return;
+    }
     this.props.onSelectLine(line.rawLineIndex);
   };
 
   onSelectWord = (word: string, location: RawLocation) => {
+    const editingLine = this.state.lines.find(line => line.isEditing);
+    if (editingLine != null) {
+      // TODO if editing start editing selected line
+      return;
+    }
     this.props.onSelectWord(word, location);
   };
 
@@ -162,6 +224,11 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
       const index = this.state.lines.findIndex(
         line => line.rawLineIndex === rawLineIndex
       );
+
+      if (index < 0) {
+        throw new Error(`raw index not found (${rawLineIndex})`);
+      }
+
       this.flatListRef.scrollToIndex({
         index,
         viewPosition: 0.5,
@@ -178,7 +245,8 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     if (param.item.isEditing) {
       return (
         <EditableLine
-          onChangeActiveLine={this.onChangeActiveLine}
+          ref={this.captureEditableLineRef}
+          onCommitingEdit={this.onCommitingEdit}
           onDeleteNewline={this.onDeleteNewline}
           text={param.item.text}
         />
@@ -187,8 +255,8 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     return (
       <BufferLine
         selectedLineIndex={this.props.selectedLineIndex}
-        onSelectLine={this.props.onSelectLine}
-        onSelectWord={this.props.onSelectWord}
+        onSelectLine={this.onSelectLine}
+        onSelectWord={this.onSelectWord}
         {...param}
         lines={this.state.lines}
       />

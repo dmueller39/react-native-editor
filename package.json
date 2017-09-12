@@ -9,6 +9,7 @@
     "url": "http://twitter.com/dmueller39"
   },
   "scripts": {
+    "start": "node node_modules/react-native/local-cli/cli.js start",
     "lint": "node ./node_modules/.bin/eslint ./",
     "test": "jest",
     "flow-check": "node node_modules/flow-bin/cli.js check"

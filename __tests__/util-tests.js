@@ -4,7 +4,7 @@ import {
   multilineLocateWord,
   isCharacterIndexSelectedWord,
   getRawLocation,
-  updateLinesWithActiveText,
+  updateLinesWithEdit,
   updateLinesByDeletingNewline,
 } from '../util';
 
@@ -291,9 +291,9 @@ describe('updateLinesWithActiveText', () => {
         textSections: [],
       },
     ];
-    const result = updateLinesWithActiveText(
+    const result = updateLinesWithEdit(
       lines,
-      'text',
+      { text: 'text', start: 0, end: 3 },
       414,
       undefined,
       undefined
@@ -323,9 +323,9 @@ describe('updateLinesWithActiveText', () => {
         textSections: [],
       },
     ];
-    const result = updateLinesWithActiveText(
+    const result = updateLinesWithEdit(
       lines,
-      'bar',
+      { text: 'bar', start: 0, end: 3 },
       414,
       undefined,
       undefined
@@ -365,9 +365,9 @@ bar`;
     const expectedLines = processLines(expectedData, 10, null, null, 1, true);
 
     const text = `bar`;
-    const result = updateLinesWithActiveText(
+    const result = updateLinesWithEdit(
       lines,
-      text,
+      { text, start: 0, end: 3 },
       414,
       undefined,
       undefined
@@ -389,9 +389,9 @@ baz
 
     const text = `bar
 baz`;
-    const result = updateLinesWithActiveText(
+    const result = updateLinesWithEdit(
       lines,
-      text,
+      { text: '\n', start: 3, end: 3 },
       414,
       undefined,
       undefined
