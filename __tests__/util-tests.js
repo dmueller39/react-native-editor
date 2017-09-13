@@ -25,6 +25,20 @@ describe('processLines', () => {
       },
     ]);
   });
+
+  it('processes a long line', () => {
+    let longLine = '';
+    while (longLine.length < 1000) {
+      longLine = longLine + 'a';
+    }
+
+    const initialData = `foo
+${longLine}
+12345678901234567890`;
+    const lines = processLines(initialData, 10, null, null, 2, true);
+
+    expect(lines[lines.length - 1].rawLineIndex).toBe(2);
+  });
 });
 
 describe('multilineLocateWord', () => {
@@ -186,6 +200,7 @@ describe('updateLinesByDeletingNewline', () => {
         continuing: false,
         continued: false,
         textSections: [],
+        selection: { end: 0, start: 0 },
       },
     ];
 
@@ -260,6 +275,7 @@ describe('updateLinesByDeletingNewline', () => {
         continuing: false,
         continued: false,
         textSections: [],
+        selection: { end: 3, start: 3 },
       },
       {
         start: 0,
@@ -325,7 +341,7 @@ describe('updateLinesWithActiveText', () => {
     ];
     const result = updateLinesWithEdit(
       lines,
-      { text: 'bar', start: 0, end: 3 },
+      { replacement: 'bar', start: 0, end: 3 },
       414,
       undefined,
       undefined
@@ -350,6 +366,7 @@ describe('updateLinesWithActiveText', () => {
         continuing: false,
         continued: false,
         textSections: [],
+        selection: null,
       },
     ];
 
@@ -362,12 +379,15 @@ foo`;
 
     const expectedData = `
 bar`;
-    const expectedLines = processLines(expectedData, 10, null, null, 1, true);
-
+    let expectedLines = processLines(expectedData, 10, null, null, 1, true);
+    expectedLines = [
+      expectedLines[0],
+      { ...expectedLines[1], selection: null },
+    ];
     const text = `bar`;
     const result = updateLinesWithEdit(
       lines,
-      { text, start: 0, end: 3 },
+      { replacement: text, start: 0, end: 3 },
       414,
       undefined,
       undefined
@@ -391,11 +411,107 @@ baz
 baz`;
     const result = updateLinesWithEdit(
       lines,
-      { text: '\n', start: 3, end: 3 },
+      { replacement: '\n', start: 3, end: 3 },
       414,
       undefined,
       undefined
     );
+
+    expect(result).toEqual(expectedLines);
+  });
+
+  it('modifies lines in an expected manner when inserting a new line after a long line', () => {
+    const initialData = `foo
+12345678901234567890
+barbaz`;
+    const lines = processLines(initialData, 10, null, null, 2, true);
+
+    const expectedData = `foo
+12345678901234567890
+bar
+baz`;
+    const expectedLines = processLines(expectedData, 10, null, null, 3, true);
+
+    const result = updateLinesWithEdit(
+      lines,
+      { replacement: '\n', start: 3, end: 3 },
+      414,
+      undefined,
+      undefined
+    );
+
+    expect(result).toEqual(expectedLines);
+  });
+
+  it('starts editing an entire rawLineIndex at once', () => {
+    let longLine = '';
+    while (longLine.length < 1000) {
+      longLine = longLine + 'a';
+    }
+
+    const initialData = `foo
+${longLine}
+12345678901234567890`;
+    const lines = processLines(initialData, 10, null, null, 2, true);
+
+    const expectedData = `foo
+${longLine}12345678901234567890`;
+    let expectedLines = processLines(expectedData, 10, null, null, 1, true);
+
+    const result = updateLinesByDeletingNewline(lines, 10, null, null);
+
+    expectedLines = [
+      expectedLines[0],
+      { ...expectedLines[1], selection: { start: 1000, end: 1000 } },
+    ];
+
+    expect(result).toEqual(expectedLines);
+  });
+
+  it('handles deleted lines following long lines', () => {
+    const initialData = `foo
+123456789012345
+aaaaaa
+`;
+    const lines = processLines(initialData, 10, null, null, 2, true);
+
+    const expectedData = `foo
+123456789012345aaaaaa
+`;
+    let expectedLines = processLines(expectedData, 10, null, null, 1, true);
+
+    const result = updateLinesByDeletingNewline(lines, 10, null, null);
+
+    expectedLines.splice(1, 1, {
+      ...expectedLines[1],
+      selection: { start: 15, end: 15 },
+    });
+
+    expect(result).toEqual(expectedLines);
+  });
+
+  it('handles edits following long lines', () => {
+    const initialData = `foo
+123456789012345
+aaaaaa
+`;
+    const lines = processLines(initialData, 10, null, null, 2, true);
+
+    const expectedData = `foo
+123456789012345
+aaaaaaa
+`;
+    let expectedLines = processLines(expectedData, 10, null, null, 2, true);
+
+    const result = updateLinesWithEdit(
+      lines,
+      { end: 0, start: 0, replacement: 'a' },
+      10,
+      null,
+      null
+    );
+
+    expectedLines.splice(3, 1, { ...expectedLines[3], selection: null });
 
     expect(result).toEqual(expectedLines);
   });

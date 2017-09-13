@@ -50,6 +50,17 @@ type State = {
   edits: (?Edit)[],
 };
 
+function linesMustAscend(lines: Lines) {
+  let last = 0;
+  lines.forEach(line => {
+    if (last != line.rawLineIndex && last != line.rawLineIndex - 1) {
+      console.log(JSON.stringify(lines));
+      console.error('Lines must ascend');
+    }
+    last = line.rawLineIndex;
+  });
+}
+
 export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   static defaultProps = defaultProps;
   state = {
@@ -133,6 +144,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
         this.props.selectedWord,
         this.props.selectedLocation
       );
+      linesMustAscend(lines);
       return absoluteEdit;
     });
     const edits = [...this.state.edits, ...partialEdits].filter(
@@ -180,14 +192,16 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     this.setState(
       (oldState: State) => {
         const state = this.getUpdatedStateWithRawEdits(oldState, rawEdits);
+        const lines = updateLinesByDeletingNewline(
+          state.lines,
+          this.props.width,
+          this.props.selectedWord,
+          this.props.selectedLocation
+        );
+        const edits = [...state.edits, getDeleteLineEdit(state.lines)];
         return {
-          edits: [...state.edits, getDeleteLineEdit(state.lines)],
-          lines: updateLinesByDeletingNewline(
-            state.lines,
-            this.props.width,
-            this.props.selectedWord,
-            this.props.selectedLocation
-          ),
+          edits,
+          lines,
         };
       },
       this.onChangeData
@@ -265,6 +279,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   };
 
   render() {
+    linesMustAscend(this.state.lines);
     return (
       <FlatList
         {...this.props}

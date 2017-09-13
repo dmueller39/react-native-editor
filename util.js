@@ -238,6 +238,8 @@ export function updateLinesWithEdit(
     edit.replacement +
     originalText.substring(edit.end);
 
+  const rawLineIndex = lines[selectedLineIndex].rawLineIndex;
+
   if (text.includes('\n')) {
     const pieces = text.split('\n');
 
@@ -245,7 +247,7 @@ export function updateLinesWithEdit(
 
     const lines1 = processLine(
       pieces[0],
-      selectedLineIndex,
+      rawLineIndex,
       maxCharacters,
       selectedWord,
       selectedLocation,
@@ -256,7 +258,7 @@ export function updateLinesWithEdit(
     const line2 = {
       start: 0,
       text: pieces[1],
-      rawLineIndex: selectedLineIndex + 1,
+      rawLineIndex: rawLineIndex + 1,
       isEditing: true,
       continuing: false,
       continued: false,
@@ -277,7 +279,7 @@ export function updateLinesWithEdit(
   const line = {
     start: 0,
     text,
-    rawLineIndex: selectedLineIndex,
+    rawLineIndex,
     isEditing: true,
     continuing: false,
     continued: false,
@@ -304,28 +306,38 @@ export function updateLinesByDeletingNewline(
     return lines;
   }
 
-  const line1 = lines[selectedLineIndex - 1];
   const line2 = lines[selectedLineIndex];
 
-  const text = line1.text + line2.text;
+  const previousLineRawLineIndex = line2.rawLineIndex - 1;
+
+  const previousLineIndex = lines.findIndex(
+    line => line.rawLineIndex === previousLineRawLineIndex
+  );
+
+  const previousText = lines
+    .filter(line => line.rawLineIndex === previousLineRawLineIndex)
+    .map(line => line.text)
+    .join('');
+
+  const text = previousText + line2.text;
 
   const line = {
     start: 0,
     text,
-    rawLineIndex: selectedLineIndex - 1,
+    rawLineIndex: previousLineRawLineIndex,
     isEditing: true,
     continuing: false,
     continued: false,
     textSections: [],
     isSelected: true,
-    selection: { start: line1.text.length, end: line1.text.length },
+    selection: { start: previousText.length, end: previousText.length },
   };
 
-  const pre = lines.slice(0, selectedLineIndex - 1);
+  const pre = lines.slice(0, previousLineIndex);
 
-  const post = lines.slice(selectedLineIndex + 1).map(line => ({
-    ...line,
-    rawLineIndex: line.rawLineIndex - 1,
+  const post = lines.slice(selectedLineIndex + 1).map(l => ({
+    ...l,
+    rawLineIndex: l.rawLineIndex - 1,
   }));
 
   return [...pre, line, ...post];
