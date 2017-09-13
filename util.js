@@ -283,6 +283,7 @@ export function updateLinesWithEdit(
     continued: false,
     isSelected: true,
     textSections: [],
+    selection: null,
   };
 
   const pre = lines.slice(0, selectedLineIndex);
@@ -317,6 +318,7 @@ export function updateLinesByDeletingNewline(
     continued: false,
     textSections: [],
     isSelected: true,
+    selection: { start: line1.text.length, end: line1.text.length },
   };
 
   const pre = lines.slice(0, selectedLineIndex - 1);

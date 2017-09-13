@@ -29,22 +29,56 @@ type SelectionChangeEvent = {
 };
 
 type Props = {
+  selection: ?{
+    start: number,
+    end: number,
+  },
   text: string,
   onCommitingEdit: (Edit[]) => void,
-  onDeleteNewline: () => void,
+  onDeleteNewline: (Edit[]) => void,
 };
 
-export default class EditableLine extends PureComponent<void, Props, void> {
-  edits: Edit[] = [];
-
+type State = {
   selection: {
     start: number,
     end: number,
-  } = { start: 0, end: 0 };
+  },
+  needsSelectionMatch: boolean,
+};
+
+export default class EditableLine extends PureComponent<void, Props, State> {
+  edits: Edit[] = [];
+
+  state: State = {
+    selection: {
+      start: 0,
+      end: 0,
+    },
+    needsSelectionMatch: false,
+  };
+
+  constructor(props: Props) {
+    super();
+    const selection = props.selection;
+    if (selection != null) {
+      this.state = { ...this.state, selection, needsSelectionMatch: true };
+    }
+  }
 
   onComponentWillReceiveProps(props: Props) {
     if (props.text != this.props.text) {
       this.edits = [];
+    }
+    const selection = props.selection;
+    if (
+      selection != null &&
+      selection.start != this.state.selection.start &&
+      selection.end != this.state.selection.end
+    ) {
+      this.setState(() => ({
+        selection,
+        needsSelectionMatch: true,
+      }));
     }
   }
 
@@ -55,8 +89,8 @@ export default class EditableLine extends PureComponent<void, Props, void> {
   onKeyPress = (event: KeyPressEvent) => {
     if (
       event.nativeEvent.key === 'Backspace' &&
-      this.selection.start === 0 &&
-      this.selection.end === 0
+      this.state.selection.start === 0 &&
+      this.state.selection.end === 0
     ) {
       this.props.onDeleteNewline(this.edits);
       this.edits = [];
@@ -78,15 +112,22 @@ export default class EditableLine extends PureComponent<void, Props, void> {
 
   onSelectionChange = (event: SelectionChangeEvent) => {
     const { selection } = event.nativeEvent;
-    this.selection = selection;
+    if (this.state.needsSelectionMatch) {
+      this.setState(() => ({
+        needsSelectionMatch: false,
+      }));
+    } else {
+      this.setState(() => ({
+        needsSelectionMatch: false,
+        selection,
+      }));
+    }
   };
 
   render() {
-    if (this.edits.length > 0) {
-      throw new Error('Rendering inconsistency');
-    }
     return (
       <TextInput
+        multiline
         style={styles.textInput}
         defaultValue={this.props.text}
         autoCorrect={false}
@@ -95,7 +136,7 @@ export default class EditableLine extends PureComponent<void, Props, void> {
         onTextInput={this.onTextInput}
         onKeyPress={this.onKeyPress}
         onSelectionChange={this.onSelectionChange}
-        multiline
+        selection={this.state.selection}
       />
     );
   }

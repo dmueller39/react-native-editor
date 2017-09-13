@@ -249,6 +249,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
           onCommitingEdit={this.onCommitingEdit}
           onDeleteNewline={this.onDeleteNewline}
           text={param.item.text}
+          selection={param.item.selection}
         />
       );
     }

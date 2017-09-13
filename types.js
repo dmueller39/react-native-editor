@@ -27,6 +27,10 @@ export type Line = {
   continued: boolean,
   isEditing: boolean,
   isSelected: boolean,
+  selection?: ?{
+    start: number,
+    end: number,
+  },
 };
 
 export type Lines = Array<Line>;
