@@ -6,6 +6,7 @@ import {
   getRawLocation,
   updateLinesWithEdit,
   updateLinesByDeletingNewline,
+  getIndexOfNewline,
 } from '../util';
 
 describe('processLines', () => {
@@ -514,5 +515,38 @@ aaaaaaa
     expectedLines.splice(3, 1, { ...expectedLines[3], selection: null });
 
     expect(result).toEqual(expectedLines);
+  });
+});
+
+describe('getIndexOfNewline', () => {
+  it('finds a newline', () => {
+    const data = `a
+123
+456789
+01234
+
+5
+`;
+    expect(getIndexOfNewline(data, 0)).toBe(1);
+    expect(getIndexOfNewline(data, 1)).toBe(5);
+    expect(getIndexOfNewline(data, 2)).toBe(12);
+    expect(getIndexOfNewline(data, 3)).toBe(18);
+    expect(getIndexOfNewline(data, 4)).toBe(19);
+    expect(getIndexOfNewline(data, 5)).toBe(21);
+  });
+  it('finds a newline in a string with a zero length first line', () => {
+    const data = `
+123
+456789
+01234
+
+5
+`;
+    expect(getIndexOfNewline(data, 0)).toBe(0);
+    expect(getIndexOfNewline(data, 1)).toBe(4);
+    expect(getIndexOfNewline(data, 2)).toBe(11);
+    expect(getIndexOfNewline(data, 3)).toBe(17);
+    expect(getIndexOfNewline(data, 4)).toBe(18);
+    expect(getIndexOfNewline(data, 5)).toBe(20);
   });
 });

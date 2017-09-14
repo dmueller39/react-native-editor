@@ -612,3 +612,13 @@ export function getDeleteLineEdit(lines: Lines): ?Edit {
     replacement: '',
   };
 }
+
+export function getIndexOfNewline(str: string, num: number): number {
+  let index = -1;
+  let newlineNum = -1;
+  while (newlineNum < num && (index != -1 || newlineNum === -1)) {
+    index = str.indexOf('\n', index + 1);
+    newlineNum++;
+  }
+  return index;
+}

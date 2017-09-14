@@ -1,7 +1,7 @@
 // @flow
 import React, { Component } from 'react';
 
-import { StyleSheet, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, KeyboardAvoidingView, Clipboard } from 'react-native';
 
 import _ from 'underscore';
 import {
@@ -21,6 +21,7 @@ import {
   getNextLocation,
   getPreviousLocation,
   getDataWithReplaceWord,
+  getIndexOfNewline,
 } from './util';
 
 const styles = StyleSheet.create({
@@ -113,9 +114,30 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     }
     selectedLineIndex = Math.min(
       selectedLineIndex + 1,
-      data.split('\n').length - 1
+      data.split('\n').length - 1 // FIXME
     );
     this.setState({ selectedLineIndex });
+  }
+
+  onPressPaste() {
+    Clipboard.getString().then(contents => {
+      const { selectedLineIndex, data } = this.state;
+      if (selectedLineIndex == null || data == null) {
+        return;
+      }
+
+      const index = getIndexOfNewline(data, selectedLineIndex);
+
+      const newData = data.substring(0, index) +
+        contents +
+        data.substring(index);
+
+      if (typeof contents === 'string' && typeof data === 'string') {
+        this.setState({
+          data: newData,
+        });
+      }
+    });
   }
 
   onPressInsertDone() {
@@ -357,6 +379,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     onPressPreviousLine: () => this.onPressPreviousLine(),
     onPressNextLine: () => this.onPressNextLine(),
     onPressInsertDone: () => this.onPressInsertDone(),
+    onPressPaste: () => this.onPressPaste(),
   };
 
   renderTextInputBar() {

@@ -43,6 +43,7 @@ type Props = {
     onPressReplaceAll: () => void,
     onPressReplace: () => void,
     onPressEdit: () => void,
+    onPressPaste: () => void,
   },
 };
 
@@ -59,6 +60,7 @@ const defaultProps = {
     onPressEnterLine: () => {},
     onPressReplaceAll: () => {},
     onPressEdit: () => {},
+    onPressPaste: () => {},
   },
 };
 
@@ -85,6 +87,7 @@ export default function ControlBar(props: Props) {
           <Button onPress={props.actions.onPressX} text="x" />
           <Button onPress={props.actions.onPressPreviousLine} text="↑" />
           <Button onPress={props.actions.onPressNextLine} text="↓" />
+          <Button onPress={props.actions.onPressPaste} text="v" />
           <View style={styles.spacer} />
           <Button onPress={props.actions.onPressEdit} text="✎" />
         </View>
