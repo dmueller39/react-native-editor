@@ -379,9 +379,11 @@ export function getAllMatchLocations(word: string, haystack: string) {
 
 export function getNextLocation(
   word: string,
-  location: RawLocation,
+  location: ?RawLocation,
   haystack: string
 ) {
+  const lineIndex = location ? location.lineIndex : -1;
+  const start = location ? location.start : -1;
   const locations = getAllMatchLocations(word, haystack);
   if (location === null) {
     return locations[0];
@@ -389,8 +391,7 @@ export function getNextLocation(
   const nextLocation = _.find(
     locations,
     l =>
-      l.lineIndex > location.lineIndex ||
-      (l.lineIndex === location.lineIndex && l.start > location.start)
+      l.lineIndex > lineIndex || (l.lineIndex === lineIndex && l.start > start)
   );
   return nextLocation || locations[0];
 }

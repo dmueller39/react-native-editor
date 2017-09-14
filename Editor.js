@@ -85,7 +85,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   onPressNextSelection() {
     const { data, selectedWord } = this.state;
     let { selectedLocation } = this.state;
-    if (selectedWord == null || selectedLocation == null || data == null) {
+    if (selectedWord == null || data == null) {
       return;
     }
     selectedLocation = getNextLocation(selectedWord, selectedLocation, data);
@@ -291,7 +291,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   onConfirmSelectedWord(selectedWord: string) {
     let { selectedLocation } = this.state;
     const { data } = this.state;
-    if (data == null || selectedLocation == null) {
+    if (data == null) {
       return;
     }
 
@@ -384,7 +384,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
 
   renderTextInputBar() {
     let actions = null;
-    let label: ?string = null;
+    let label: string = '';
     let keyboardType = 'default';
     switch (this.state.command) {
       case COMMANDS.search:
@@ -392,7 +392,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
           onChangeText: word => this.onChangeSelectedWord(word),
           onConfirmText: word => this.onConfirmSelectedWord(word),
         };
-        label = this.state.selectedWord;
+        label = this.state.selectedWord || '';
         break;
       case COMMANDS.goToLine:
         actions = {
@@ -400,27 +400,27 @@ export default class Editor extends Component<DefaultProps, Props, State> {
           onConfirmText: line => this.onConfirmGoToLine(line),
         };
         keyboardType = 'numeric';
-        label = this.state.goToLineText;
+        label = this.state.goToLineText || '';
         break;
       case COMMANDS.replace:
         actions = {
           onChangeText: word => this.onChangeReplacementWord(word),
           onConfirmText: word => this.onConfirmReplaceWord(word),
         };
-        label = this.state.replacementWord;
+        label = this.state.replacementWord || '';
         break;
       case COMMANDS.replaceAll:
         actions = {
           onChangeText: word => this.onChangeReplacementWord(word),
           onConfirmText: word => this.onConfirmReplaceAll(word),
         };
-        label = this.state.replacementWord;
+        label = this.state.replacementWord || '';
         break;
       default:
         break;
     }
     // if there are no actions to take, then we shouldn't render the bar
-    if (actions === null || label == null) {
+    if (actions === null) {
       return null;
     }
     return (
