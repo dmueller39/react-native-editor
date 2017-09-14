@@ -114,8 +114,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   componentDidUpdate(prevProps: Props) {
     if (
       this.props.selectedLocation != null &&
-      prevProps.selectedLocation != null &&
-      isLocationEqual(this.props.selectedLocation, prevProps.selectedLocation)
+      !isLocationEqual(this.props.selectedLocation, prevProps.selectedLocation)
     ) {
       this.scrollToRawLineIndex(this.props.selectedLocation.lineIndex);
     }

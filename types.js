@@ -39,9 +39,13 @@ export type PressEvent = { nativeEvent: { locationX: number } };
 
 // eslint-disable-next-line import/prefer-default-export
 export function isLocationEqual(
-  location1: RawLocation,
-  location2: RawLocation
+  location1: ?RawLocation,
+  location2: ?RawLocation
 ) {
+  if (location1 == null || location2 == null) {
+    return location1 == null && location2 == null;
+  }
+
   return location1.lineIndex === location2.lineIndex &&
     location1.start === location2.start &&
     location1.end === location2.end;
