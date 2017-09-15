@@ -162,8 +162,6 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
 
   getEdits(): Edit[] {
     const state = this.getUpdatedStateWithRef(this.state, this.editableLineRef);
-    console.log(state.lines);
-    console.log(state.edits);
     return state.edits;
   }
 
