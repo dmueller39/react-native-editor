@@ -1,15 +1,30 @@
 // @flow
 import React, { PureComponent } from 'react';
-import { StyleSheet, TextInput } from 'react-native';
+import { StyleSheet, TextInput, View, Text } from 'react-native';
 import type { Edit } from './Edit';
+import { getTextWithEdit } from './util';
+import type { LayoutEvent } from './types';
 
 const styles = StyleSheet.create({
   textInput: {
     fontFamily: 'Courier New',
     fontWeight: 'bold',
     fontSize: 14,
-    flex: 1,
     backgroundColor: '#FDDD81',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    paddingTop: 0,
+  },
+  textMeasure: {
+    fontFamily: 'Courier New',
+    fontWeight: 'bold',
+    fontSize: 14,
+    backgroundColor: '#FDDD81',
+    paddingTop: 0,
+    flex: 1,
   },
 });
 
@@ -36,6 +51,7 @@ type Props = {
   text: string,
   onCommitingEdit: (Edit[]) => void,
   onDeleteNewline: (Edit[]) => void,
+  onLayout: (LayoutEvent) => void,
 };
 
 type State = {
@@ -44,6 +60,7 @@ type State = {
     end: number,
   },
   needsSelectionMatch: boolean,
+  text: string,
 };
 
 export default class EditableLine extends PureComponent<void, Props, State> {
@@ -55,14 +72,16 @@ export default class EditableLine extends PureComponent<void, Props, State> {
       end: 0,
     },
     needsSelectionMatch: false,
+    text: '',
   };
 
   constructor(props: Props) {
-    super();
+    super(props);
     const selection = props.selection;
     if (selection != null) {
       this.state = { ...this.state, selection, needsSelectionMatch: true };
     }
+    this.state.text = props.text;
   }
 
   onComponentWillReceiveProps(props: Props) {
@@ -102,6 +121,11 @@ export default class EditableLine extends PureComponent<void, Props, State> {
       ...event.nativeEvent.range,
       replacement: event.nativeEvent.text,
     };
+
+    this.setState((state: State) => ({
+      text: getTextWithEdit(state.text, edit),
+    }));
+
     this.edits.push(edit);
     if (edit.replacement.includes('\n')) {
       // commit the edits on newlines and reset
@@ -125,19 +149,26 @@ export default class EditableLine extends PureComponent<void, Props, State> {
   };
 
   render() {
+    // The Text does the measuring, the TextInput floats over the top,
+    // matching the height
     return (
-      <TextInput
-        multiline
-        style={styles.textInput}
-        defaultValue={this.props.text}
-        autoCorrect={false}
-        autoFocus
-        autoCapitalize="none"
-        onTextInput={this.onTextInput}
-        onKeyPress={this.onKeyPress}
-        onSelectionChange={this.onSelectionChange}
-        selection={this.state.selection}
-      />
+      <View onLayout={this.props.onLayout} style={{ flex: 1 }}>
+        <Text style={styles.textMeasure}>
+          {this.state.text}
+        </Text>
+        <TextInput
+          multiline
+          style={styles.textInput}
+          defaultValue={this.props.text}
+          autoCorrect={false}
+          autoFocus
+          autoCapitalize="none"
+          onTextInput={this.onTextInput}
+          onKeyPress={this.onKeyPress}
+          onSelectionChange={this.onSelectionChange}
+          selection={this.state.selection}
+        />
+      </View>
     );
   }
 }

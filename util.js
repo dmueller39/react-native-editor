@@ -220,6 +220,11 @@ export function getEditingLineIndex(lines: Lines): ?number {
   return index;
 }
 
+export const getTextWithEdit = (original: string, edit: Edit) =>
+  original.substring(0, edit.start) +
+  edit.replacement +
+  original.substring(edit.end);
+
 export function updateLinesWithEdit(
   lines: Lines,
   edit: Edit,
@@ -234,9 +239,7 @@ export function updateLinesWithEdit(
 
   const originalText = lines[selectedLineIndex].text;
 
-  const text = originalText.substring(0, edit.start) +
-    edit.replacement +
-    originalText.substring(edit.end);
+  const text = getTextWithEdit(originalText, edit);
 
   const rawLineIndex = lines[selectedLineIndex].rawLineIndex;
 
@@ -343,8 +346,43 @@ export function updateLinesByDeletingNewline(
   return [...pre, line, ...post];
 }
 
-export function getLineLayout(data: string, index: number) {
-  return { length: CHARACTER_HEIGHT, offset: index * CHARACTER_HEIGHT, index };
+function guessEditingLineHeight(line: Line, width: number) {
+  const approxNumOfLines = Math.max(
+    1,
+    Math.ceil(line.text.length * CHARACTER_WIDTH / width)
+  );
+  return approxNumOfLines * CHARACTER_HEIGHT;
+}
+
+export function getLineLayout(
+  data: Lines,
+  index: number,
+  editableLineHeight: ?number,
+  width: number
+) {
+  const editingIndex = data.findIndex(line => line.isEditing);
+  if (editingIndex == -1 || index < editingIndex) {
+    return {
+      length: CHARACTER_HEIGHT,
+      offset: index * CHARACTER_HEIGHT,
+      index,
+    };
+  }
+  const calcEditableLineHeight = editableLineHeight ||
+    guessEditingLineHeight(data[index], width);
+  if (editingIndex == index) {
+    return {
+      length: calcEditableLineHeight,
+      offset: index * CHARACTER_HEIGHT,
+      index,
+    };
+  }
+
+  return {
+    length: CHARACTER_HEIGHT,
+    offset: (index - 1) * CHARACTER_HEIGHT + calcEditableLineHeight,
+    index,
+  };
 }
 
 export function getMatchLocations(

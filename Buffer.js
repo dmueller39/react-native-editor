@@ -6,6 +6,7 @@ import {
   type Line,
   type Lines,
   type RawLocation,
+  type LayoutEvent,
   isLocationEqual,
 } from './types';
 
@@ -48,6 +49,7 @@ type Props = {
 type State = {
   lines: Lines,
   edits: (?Edit)[],
+  editableLineHeight: ?number,
 };
 
 function linesMustAscend(lines: Lines) {
@@ -63,9 +65,10 @@ function linesMustAscend(lines: Lines) {
 
 export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   static defaultProps = defaultProps;
-  state = {
+  state: State = {
     lines: [],
     edits: [],
+    editableLineHeight: null,
   };
 
   editableLineRef: ?EditableLine = null;
@@ -85,6 +88,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
           props.selectedLineIndex,
           props.isEditing
         ),
+        editableLineHeight: null,
       };
     }
   }
@@ -96,7 +100,11 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
       this.setState(oldState => {
         // reset the edits if isEditing changes value
         const edits = didChangeIsEditing ? [] : oldState.edits;
+        const editableLineHeight = didChangeIsEditing && !nextProps.isEditing
+          ? null
+          : oldState.editableLineHeight;
         return {
+          editableLineHeight,
           edits,
           lines: processLines(
             nextProps.data,
@@ -150,7 +158,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
       edit => edit != null
     );
 
-    return { edits, lines };
+    return { ...state, edits, lines };
   }
 
   getUpdatedStateWithRef(state: State, editableLine: ?EditableLine): State {
@@ -223,6 +231,12 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     this.props.onSelectWord(word, location);
   };
 
+  onEditableLineLayout = (event: LayoutEvent) => {
+    this.setState({
+      editableLineHeight: event.nativeEvent.layout.height,
+    });
+  };
+
   flatListRef: FlatList<Line>;
   viewableItems: Array<{ item: Line }> = [];
   scrollToRawLineIndex(rawLineIndex: number) {
@@ -261,6 +275,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
           onDeleteNewline={this.onDeleteNewline}
           text={param.item.text}
           selection={param.item.selection}
+          onLayout={this.onEditableLineLayout}
         />
       );
     }
@@ -275,13 +290,22 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     );
   };
 
+  getItemLayout = (data: Lines, index: number) => {
+    return getLineLayout(
+      data,
+      index,
+      this.state.editableLineHeight,
+      this.props.width
+    );
+  };
+
   render() {
     linesMustAscend(this.state.lines);
     return (
       <FlatList
         {...this.props}
         ref={this.captureRef}
-        getItemLayout={getLineLayout}
+        getItemLayout={this.getItemLayout}
         onViewableItemsChanged={this.onViewableItemsChanged}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item: void, index: number) => `line-${String(index)}`}

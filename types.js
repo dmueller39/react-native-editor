@@ -37,6 +37,10 @@ export type Lines = Array<Line>;
 
 export type PressEvent = { nativeEvent: { locationX: number } };
 
+export type LayoutEvent = {
+  nativeEvent: { layout: { width: number, height: number } },
+};
+
 // eslint-disable-next-line import/prefer-default-export
 export function isLocationEqual(
   location1: ?RawLocation,
