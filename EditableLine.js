@@ -4,10 +4,11 @@ import { StyleSheet, TextInput, View, Text } from 'react-native';
 import type { Edit } from './Edit';
 import { getTextWithEdit } from './util';
 import type { LayoutEvent } from './types';
+import { FONT_FAMILY } from './constants';
 
 const styles = StyleSheet.create({
   textInput: {
-    fontFamily: 'Courier New',
+    fontFamily: FONT_FAMILY,
     fontWeight: 'bold',
     fontSize: 14,
     backgroundColor: '#FDDD81',
@@ -19,7 +20,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   textMeasure: {
-    fontFamily: 'Courier New',
+    fontFamily: FONT_FAMILY,
     fontWeight: 'bold',
     fontSize: 14,
     backgroundColor: '#FDDD81',

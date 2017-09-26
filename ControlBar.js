@@ -2,11 +2,11 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
 import Button from './Button';
-import { COMMANDS } from './constants';
+import { COMMANDS, FONT_FAMILY } from './constants';
 
 const TEXT_STYLES = {
   flex: 1,
-  fontFamily: 'Courier New',
+  fontFamily: FONT_FAMILY,
   fontSize: 15,
 };
 

@@ -2,11 +2,12 @@
 import React from 'react';
 
 import { StyleSheet, TextInput, View, Button } from 'react-native';
+import { FONT_FAMILY } from './constants';
 
 const styles = StyleSheet.create({
   textInput: {
     height: 44,
-    fontFamily: 'Courier New',
+    fontFamily: FONT_FAMILY,
     fontSize: 15,
     flex: 1,
   },

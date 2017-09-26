@@ -12,7 +12,9 @@ export const COMMANDS = {
 export const CONTINUED_STRING = '…';
 export const CONTINUING_STRING = ' …';
 
-export const CHARACTER_WIDTH = 8.5;
-export const CHARACTER_HEIGHT = 16;
+export const CHARACTER_WIDTH = 10;
+export const CHARACTER_HEIGHT = 10;
 
 export const CHARACTER_REGEXP = /\w/;
+
+export const FONT_FAMILY = '';

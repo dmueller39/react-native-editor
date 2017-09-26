@@ -1,6 +1,7 @@
 // @flow
 import React from 'react';
 import { TouchableHighlight, Text, StyleSheet } from 'react-native';
+import { FONT_FAMILY } from './constants';
 
 const styles = StyleSheet.create({
   buttonText: {
@@ -10,7 +11,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     minWidth: 44,
     textAlign: 'center',
-    fontFamily: 'Courier New',
+    fontFamily: FONT_FAMILY,
   },
   button: {
     alignSelf: 'center',

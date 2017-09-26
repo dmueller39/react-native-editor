@@ -21,11 +21,12 @@ import {
   CONTINUED_STRING,
   CONTINUING_STRING,
   CHARACTER_WIDTH,
+  FONT_FAMILY,
 } from './constants';
 
 const styles = StyleSheet.create({
   text: {
-    fontFamily: 'Courier New',
+    fontFamily: FONT_FAMILY,
     fontSize: 14,
   },
   line: {},
