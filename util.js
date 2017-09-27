@@ -212,7 +212,15 @@ export function processLines(
   return flattened;
 }
 
-export function getEditingLineIndex(lines: Lines): ?number {
+export function getEditingRawLineIndex(lines: Lines): ?number {
+  const line = lines.find((line: Line) => line.isEditing);
+  if (line == null) {
+    return null;
+  }
+  return line.rawLineIndex;
+}
+
+function getEditingLineIndex(lines: Lines): ?number {
   const index = lines.findIndex((line: Line) => line.isEditing);
   if (index < 0) {
     return null;

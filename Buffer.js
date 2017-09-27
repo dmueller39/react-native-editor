@@ -22,7 +22,7 @@ import {
   processLine,
   updateLinesWithEdit,
   updateLinesByDeletingNewline,
-  getEditingLineIndex,
+  getEditingRawLineIndex,
   getChangeTextEdit,
   getDeleteLineEdit,
 } from './util';
@@ -174,7 +174,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
   }
 
   getEditingLineIndex(): ?number {
-    return getEditingLineIndex(this.state.lines);
+    return getEditingRawLineIndex(this.state.lines);
   }
 
   onViewableItemsChanged = (info: { viewableItems: Array<{ item: Line }> }) => {

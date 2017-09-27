@@ -21,6 +21,7 @@ import {
   CONTINUED_STRING,
   CONTINUING_STRING,
   CHARACTER_WIDTH,
+  CHARACTER_HEIGHT,
   FONT_FAMILY,
 } from './constants';
 
@@ -28,6 +29,7 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: FONT_FAMILY,
     fontSize: 14,
+    minHeight: CHARACTER_HEIGHT,
   },
   line: {},
   selectedLine: {

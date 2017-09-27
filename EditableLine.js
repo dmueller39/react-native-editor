@@ -4,7 +4,7 @@ import { StyleSheet, TextInput, View, Text } from 'react-native';
 import type { Edit } from './Edit';
 import { getTextWithEdit } from './util';
 import type { LayoutEvent } from './types';
-import { FONT_FAMILY } from './constants';
+import { FONT_FAMILY, CHARACTER_HEIGHT } from './constants';
 
 const styles = StyleSheet.create({
   textInput: {
@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: '#FDDD81',
     paddingTop: 0,
-    flex: 1,
+    minHeight: CHARACTER_HEIGHT,
   },
 });
 
@@ -153,7 +153,7 @@ export default class EditableLine extends PureComponent<void, Props, State> {
     // The Text does the measuring, the TextInput floats over the top,
     // matching the height
     return (
-      <View onLayout={this.props.onLayout} style={{ flex: 1 }}>
+      <View onLayout={this.props.onLayout}>
         <Text style={styles.textMeasure}>
           {this.state.text}
         </Text>
@@ -168,6 +168,7 @@ export default class EditableLine extends PureComponent<void, Props, State> {
           onKeyPress={this.onKeyPress}
           onSelectionChange={this.onSelectionChange}
           selection={this.state.selection}
+          underlineColorAndroid="transparent"
         />
       </View>
     );
