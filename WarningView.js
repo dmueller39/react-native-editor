@@ -14,11 +14,11 @@ const ISSUE_URL = 'https://github.com/dmueller39/react-native-editor/issues/4';
 function showWarningExplanation() {
   Alert.alert(
     null,
-    `Searching and navigation are supported, but editing is not. Please see ${ISSUE_URL} for more details.`,
+    `Searching and navigation are supported, but editing is not.`,
     [
       { text: 'Close' },
       {
-        text: 'Go To Issue',
+        text: 'Visit Github Issue',
         onPress: () => Linking.openURL(ISSUE_URL),
       },
     ]
