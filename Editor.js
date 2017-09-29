@@ -11,6 +11,7 @@ import {
 import Buffer from './Buffer';
 import ControlBar from './ControlBar';
 import TextInputBar from './TextInputBar';
+import WarningView from './WarningView';
 import text, { replaceRange } from './text';
 
 import { COMMANDS } from './constants';
@@ -431,6 +432,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   render() {
     return (
       <KeyboardAvoidingView style={[this.props.style]} behavior="padding">
+        <WarningView />
         <Buffer
           ref={this.captureBufferRef}
           onSelectWord={this.onSelectWord}
