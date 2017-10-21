@@ -4,13 +4,13 @@ import { StyleSheet, TextInput, View, Text } from 'react-native';
 import type { Edit } from './Edit';
 import { getTextWithEdit } from './util';
 import type { LayoutEvent } from './types';
-import { FONT_FAMILY, CHARACTER_HEIGHT } from './constants';
+import { FONT_FAMILY, FONT_SIZE, CHARACTER_HEIGHT } from './constants';
 
 const styles = StyleSheet.create({
   textInput: {
     fontFamily: FONT_FAMILY,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: FONT_SIZE,
     backgroundColor: '#FDDD81',
     position: 'absolute',
     left: 0,
@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   textMeasure: {
     fontFamily: FONT_FAMILY,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: FONT_SIZE,
     backgroundColor: '#FDDD81',
     paddingTop: 0,
     minHeight: CHARACTER_HEIGHT,

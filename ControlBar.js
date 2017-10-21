@@ -2,12 +2,12 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
 import Button from './Button';
-import { COMMANDS, FONT_FAMILY } from './constants';
+import { COMMANDS, FONT_FAMILY, FONT_SIZE } from './constants';
 
 const TEXT_STYLES = {
   flex: 1,
   fontFamily: FONT_FAMILY,
-  fontSize: 15,
+  fontSize: FONT_SIZE,
 };
 
 const styles = StyleSheet.create({

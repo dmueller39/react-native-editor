@@ -18,3 +18,4 @@ export const CHARACTER_HEIGHT = 10;
 export const CHARACTER_REGEXP = /\w/;
 
 export const FONT_FAMILY = '';
+export const FONT_SIZE = 11;

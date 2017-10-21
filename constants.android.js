@@ -12,3 +12,4 @@ export const CHARACTER_WIDTH = 8.3;
 export const CHARACTER_HEIGHT = 16;
 
 export const FONT_FAMILY = 'monospace';
+export const FONT_SIZE = 11;
