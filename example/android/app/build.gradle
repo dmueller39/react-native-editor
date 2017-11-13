@@ -89,6 +89,13 @@ def enableSeparateBuildPerCPUArchitecture = false
  */
 def enableProguardInReleaseBuilds = false
 
+project.ext.react = [
+  // the name of the generated asset file containing your JS bundle
+  bundleAssetName: "index.android.bundle",
+  // the entry file for bundle generation
+  entryFile: "index.js",
+]
+
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.1"

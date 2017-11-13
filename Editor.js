@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 
 import { StyleSheet, KeyboardAvoidingView, Clipboard } from 'react-native';
 
-import _ from 'underscore';
+import _ from 'lodash';
 import {
   type StyleObj,
 } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';

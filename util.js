@@ -1,6 +1,6 @@
 // @flow
 
-import _ from 'underscore';
+import _ from 'lodash';
 
 import type { Edit } from './Edit';
 
