@@ -72,6 +72,14 @@ exports[`renders correctly 1`] = `
       }
     }
     updateCellsBatchingPeriod={50}
+    viewabilityConfigCallbackPairs={
+      Array [
+        Object {
+          "onViewableItemsChanged": [Function],
+          "viewabilityConfig": undefined,
+        },
+      ]
+    }
     width={320}
     windowSize={5}
   >
@@ -100,7 +108,6 @@ exports[`renders correctly 1`] = `
           <Text
             accessible={true}
             allowFontScaling={true}
-            disabled={false}
             ellipsizeMode="tail"
             style={
               Array [
@@ -108,6 +115,7 @@ exports[`renders correctly 1`] = `
                 Object {
                   "fontFamily": "Courier New",
                   "fontSize": 14,
+                  "minHeight": 16,
                 },
               ]
             }
@@ -115,7 +123,6 @@ exports[`renders correctly 1`] = `
             <Text
               accessible={true}
               allowFontScaling={true}
-              disabled={false}
               ellipsizeMode="tail"
               style={Object {}}
             >
@@ -170,7 +177,6 @@ exports[`renders correctly 1`] = `
       <Text
         accessible={true}
         allowFontScaling={true}
-        disabled={false}
         ellipsizeMode="tail"
         style={
           Object {
@@ -219,7 +225,6 @@ exports[`renders correctly 1`] = `
       <Text
         accessible={true}
         allowFontScaling={true}
-        disabled={false}
         ellipsizeMode="tail"
         style={
           Object {
