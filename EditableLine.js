@@ -1,32 +1,32 @@
 // @flow
-import React, { PureComponent } from 'react';
-import { StyleSheet, TextInput, View, Text } from 'react-native';
-import type { Edit } from './Edit';
-import { getTextWithEdit } from './util';
-import type { LayoutEvent } from './types';
-import { FONT_FAMILY, FONT_SIZE, CHARACTER_HEIGHT } from './constants';
+import React, { PureComponent } from "react";
+import { StyleSheet, TextInput, View, Text } from "react-native";
+import type { Edit } from "./Edit";
+import { getTextWithEdit } from "./util";
+import type { LayoutEvent } from "./types";
+import { FONT_FAMILY, FONT_SIZE, CHARACTER_HEIGHT } from "./constants";
 
 const styles = StyleSheet.create({
   textInput: {
     fontFamily: FONT_FAMILY,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: FONT_SIZE,
-    backgroundColor: '#FDDD81',
-    position: 'absolute',
+    backgroundColor: "#FDDD81",
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    paddingTop: 0,
+    paddingTop: 0
   },
   textMeasure: {
     fontFamily: FONT_FAMILY,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: FONT_SIZE,
-    backgroundColor: '#FDDD81',
+    backgroundColor: "#FDDD81",
     paddingTop: 0,
-    minHeight: CHARACTER_HEIGHT,
-  },
+    minHeight: CHARACTER_HEIGHT
+  }
 });
 
 type KeyPressEvent = { nativeEvent: { key: string } };
@@ -36,44 +36,44 @@ type TextInputEvent = {
     previousText: string,
     range: { end: number, start: number },
     target: number,
-    text: string,
-  },
+    text: string
+  }
 };
 
 type SelectionChangeEvent = {
-  nativeEvent: { selection: { start: number, end: number } },
+  nativeEvent: { selection: { start: number, end: number } }
 };
 
 type Props = {
   selection: ?{
     start: number,
-    end: number,
+    end: number
   },
   text: string,
   onCommitingEdit: (Edit[]) => void,
   onDeleteNewline: (Edit[]) => void,
-  onLayout: (LayoutEvent) => void,
+  onLayout: (LayoutEvent) => void
 };
 
 type State = {
   selection: {
     start: number,
-    end: number,
+    end: number
   },
   needsSelectionMatch: boolean,
-  text: string,
+  text: string
 };
 
-export default class EditableLine extends PureComponent<void, Props, State> {
+export default class EditableLine extends PureComponent<Props, State> {
   edits: Edit[] = [];
 
   state: State = {
     selection: {
       start: 0,
-      end: 0,
+      end: 0
     },
     needsSelectionMatch: false,
-    text: '',
+    text: ""
   };
 
   constructor(props: Props) {
@@ -97,7 +97,7 @@ export default class EditableLine extends PureComponent<void, Props, State> {
     ) {
       this.setState(() => ({
         selection,
-        needsSelectionMatch: true,
+        needsSelectionMatch: true
       }));
     }
   }
@@ -108,7 +108,7 @@ export default class EditableLine extends PureComponent<void, Props, State> {
 
   onKeyPress = (event: KeyPressEvent) => {
     if (
-      event.nativeEvent.key === 'Backspace' &&
+      event.nativeEvent.key === "Backspace" &&
       this.state.selection.start === 0 &&
       this.state.selection.end === 0
     ) {
@@ -120,15 +120,15 @@ export default class EditableLine extends PureComponent<void, Props, State> {
   onTextInput = (event: TextInputEvent) => {
     const edit: Edit = {
       ...event.nativeEvent.range,
-      replacement: event.nativeEvent.text,
+      replacement: event.nativeEvent.text
     };
 
     this.setState((state: State) => ({
-      text: getTextWithEdit(state.text, edit),
+      text: getTextWithEdit(state.text, edit)
     }));
 
     this.edits.push(edit);
-    if (edit.replacement.includes('\n')) {
+    if (edit.replacement.includes("\n")) {
       // commit the edits on newlines and reset
       this.props.onCommitingEdit(this.edits);
       this.edits = [];
@@ -139,12 +139,12 @@ export default class EditableLine extends PureComponent<void, Props, State> {
     const { selection } = event.nativeEvent;
     if (this.state.needsSelectionMatch) {
       this.setState(() => ({
-        needsSelectionMatch: false,
+        needsSelectionMatch: false
       }));
     } else {
       this.setState(() => ({
         needsSelectionMatch: false,
-        selection,
+        selection
       }));
     }
   };

@@ -1,51 +1,45 @@
 // @flow
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import { StyleSheet, KeyboardAvoidingView, Clipboard } from 'react-native';
+import { StyleSheet, KeyboardAvoidingView, Clipboard } from "react-native";
 
-import _ from 'lodash';
 import {
-  type StyleObj,
-} from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
+  type StyleObj
+} from "react-native/Libraries/StyleSheet/StyleSheetTypes";
 
-import Buffer from './Buffer';
-import ControlBar from './ControlBar';
-import TextInputBar from './TextInputBar';
-import WarningView from './WarningView';
-import text, { replaceRange } from './text';
+import Buffer from "./Buffer";
+import ControlBar from "./ControlBar";
+import TextInputBar from "./TextInputBar";
+import WarningView from "./WarningView";
+import text, { replaceRange } from "./text";
 
-import { COMMANDS } from './constants';
+import { COMMANDS } from "./constants";
 
-import { type RawLocation } from './types';
+import { type RawLocation } from "./types";
 
 import {
   getNextLocation,
   getPreviousLocation,
   getDataWithReplaceWord,
-  getIndexOfNewline,
-} from './util';
+  getIndexOfNewline
+} from "./util";
 
 const styles = StyleSheet.create({
   buffer: {
-    overflow: 'hidden',
+    overflow: "hidden"
   },
   controlBar: {
-    height: 44,
-  },
+    height: 44
+  }
 });
 
-const defaultProps = {
-  data: '',
-  onUpdateData: () => {},
-};
-
-type Props = {
+export type Props = {
   dimensions: {
-    width: number,
+    width: number
   },
   data: string,
-  onUpdateData: () => void,
-  style?: ?StyleObj,
+  onUpdateData: (string) => void,
+  style?: ?StyleObj
 };
 
 type State = {
@@ -56,29 +50,27 @@ type State = {
   command?: ?string,
   replacementWord?: ?string,
   goToLineText?: ?string,
-  selectedLineTimestamp?: ?number,
+  selectedLineTimestamp?: ?number
 };
 
-type DefaultProps = typeof defaultProps;
-
-export default class Editor extends Component<DefaultProps, Props, State> {
-  static defaultProps = defaultProps;
+export default class Editor extends Component<Props, State> {
+  static defaultProps = {
+    data: "",
+    onUpdateData: () => {}
+  };
 
   constructor({ data }: Props) {
     super();
     this.state = { data };
   }
 
-  state: State = {};
-
-  bufferRef: ?Buffer = null;
-
-  captureBufferRef = (buffer: Buffer) => {
-    this.bufferRef = buffer;
-  };
+  state: State = { data: undefined };
 
   componentDidUpdate() {
-    this.props.onUpdateData(this.state.data);
+    const data = this.state.data;
+    if (data != null) {
+      this.props.onUpdateData(data);
+    }
   }
 
   onChangeData = () => {};
@@ -115,7 +107,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     }
     selectedLineIndex = Math.min(
       selectedLineIndex + 1,
-      data.split('\n').length - 1 // FIXME
+      data.split("\n").length - 1 // FIXME
     );
     this.setState({ selectedLineIndex });
   }
@@ -133,9 +125,9 @@ export default class Editor extends Component<DefaultProps, Props, State> {
         contents +
         data.substring(index);
 
-      if (typeof contents === 'string' && typeof data === 'string') {
+      if (typeof contents === "string" && typeof data === "string") {
         this.setState({
-          data: newData,
+          data: newData
         });
       }
     });
@@ -158,14 +150,14 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     // TODO clean this section up, and figure out exactly what is going on with
     // ./text
     const textState = edits.reduce(
-      (textState: { data: string }, edit) => {
+      (acc: { data: string }, edit) => {
         const action = replaceRange(
-          textState.data,
+          acc.data,
           edit.start,
           edit.end,
           edit.replacement
         );
-        return text(textState, action);
+        return text(acc, action);
       },
       { data: initialData }
     );
@@ -175,7 +167,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     this.setState({
       data: textState.data,
       command: COMMANDS.selectedLine,
-      selectedLineIndex,
+      selectedLineIndex
     });
   }
 
@@ -194,21 +186,21 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       this.state.selectedWord != null
     ) {
       this.setState({
-        command: COMMANDS.selectedWord,
+        command: COMMANDS.selectedWord
       });
     } else if (
       [COMMANDS.insert].includes(this.state.command) &&
       this.state.selectedLineIndex != null
     ) {
       this.setState({
-        command: COMMANDS.selectedWord,
+        command: COMMANDS.selectedWord
       });
     } else {
       this.setState({
         command: null,
         selectedLocation: null,
         selectedWord: null,
-        selectedLineIndex: null,
+        selectedLineIndex: null
       });
     }
   }
@@ -227,7 +219,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       ) {
         return {
           command: COMMANDS.insert,
-          selectedLineIndex,
+          selectedLineIndex
         };
       }
       return {
@@ -235,7 +227,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
         selectedLineIndex,
         command: COMMANDS.selectedLine,
         selectedWord: null,
-        selectedLocation: null,
+        selectedLocation: null
       };
     });
   };
@@ -245,14 +237,14 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       command: COMMANDS.selectedWord,
       selectedWord: word,
       selectedLocation: location,
-      selectedLineIndex: null,
+      selectedLineIndex: null
     });
   };
 
   onSelectSelectedWord() {
     this.setState({
       command: COMMANDS.replace,
-      replacementWord: this.state.selectedWord,
+      replacementWord: this.state.selectedWord
     });
   }
 
@@ -267,7 +259,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
   onChangeSelectedWord(selectedWord: string) {
     this.setState({
       selectedWord,
-      selectedLocation: null,
+      selectedLocation: null
     });
   }
 
@@ -277,7 +269,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       selectedWord: null,
       selectedLocation: null,
       selectedLineIndex,
-      command: COMMANDS.selectedLine,
+      command: COMMANDS.selectedLine
     });
   }
 
@@ -285,7 +277,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     this.setState({
       goToLineText,
       selectedWord: null,
-      selectedLocation: null,
+      selectedLocation: null
     });
   }
 
@@ -300,13 +292,13 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     this.setState({
       command: selectedWord != null ? COMMANDS.selectedWord : null,
       selectedWord,
-      selectedLocation,
+      selectedLocation
     });
   }
 
   onChangeReplacementWord(replacementWord: string) {
     this.setState({
-      replacementWord,
+      replacementWord
     });
   }
 
@@ -317,7 +309,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       return;
     }
 
-    const regex = RegExp(selectedWord, 'g');
+    const regex = RegExp(selectedWord, "g");
     // TODO handle this with ./text
     data = data.replace(regex, replacementWord);
 
@@ -325,7 +317,7 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       data,
       command: COMMANDS.selectedWord,
       selectedWord: replacementWord,
-      selectedLocation: null,
+      selectedLocation: null
     });
   }
 
@@ -341,19 +333,19 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     this.setState({
       data,
       command: COMMANDS.selectedWord,
-      replacementWord,
+      replacementWord
     });
   }
 
   onPressReplace() {
     this.setState({
-      command: COMMANDS.replace,
+      command: COMMANDS.replace
     });
   }
 
   onPressReplaceAll() {
     this.setState({
-      command: COMMANDS.replaceAll,
+      command: COMMANDS.replaceAll
     });
   }
 
@@ -363,9 +355,15 @@ export default class Editor extends Component<DefaultProps, Props, State> {
       return;
     }
     this.setState({
-      command: COMMANDS.insert,
+      command: COMMANDS.insert
     });
   }
+
+  captureBufferRef = (buffer: ?Buffer) => {
+    this.bufferRef = buffer;
+  };
+
+  bufferRef: ?Buffer = null;
 
   controlBarActions = {
     onPressNextSelection: () => this.onPressNextSelection(),
@@ -380,42 +378,42 @@ export default class Editor extends Component<DefaultProps, Props, State> {
     onPressPreviousLine: () => this.onPressPreviousLine(),
     onPressNextLine: () => this.onPressNextLine(),
     onPressInsertDone: () => this.onPressInsertDone(),
-    onPressPaste: () => this.onPressPaste(),
+    onPressPaste: () => this.onPressPaste()
   };
 
   renderTextInputBar() {
     let actions = null;
-    let label: string = '';
-    let keyboardType = 'default';
+    let label: string = "";
+    let keyboardType = "default";
     switch (this.state.command) {
       case COMMANDS.search:
         actions = {
           onChangeText: word => this.onChangeSelectedWord(word),
-          onConfirmText: word => this.onConfirmSelectedWord(word),
+          onConfirmText: word => this.onConfirmSelectedWord(word)
         };
-        label = this.state.selectedWord || '';
+        label = this.state.selectedWord || "";
         break;
       case COMMANDS.goToLine:
         actions = {
           onChangeText: line => this.onChangeGoToLineText(line),
-          onConfirmText: line => this.onConfirmGoToLine(line),
+          onConfirmText: line => this.onConfirmGoToLine(line)
         };
-        keyboardType = 'numeric';
-        label = this.state.goToLineText || '';
+        keyboardType = "numeric";
+        label = this.state.goToLineText || "";
         break;
       case COMMANDS.replace:
         actions = {
           onChangeText: word => this.onChangeReplacementWord(word),
-          onConfirmText: word => this.onConfirmReplaceWord(word),
+          onConfirmText: word => this.onConfirmReplaceWord(word)
         };
-        label = this.state.replacementWord || '';
+        label = this.state.replacementWord || "";
         break;
       case COMMANDS.replaceAll:
         actions = {
           onChangeText: word => this.onChangeReplacementWord(word),
-          onConfirmText: word => this.onConfirmReplaceAll(word),
+          onConfirmText: word => this.onConfirmReplaceAll(word)
         };
-        label = this.state.replacementWord || '';
+        label = this.state.replacementWord || "";
         break;
       default:
         break;

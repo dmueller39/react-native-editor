@@ -1,55 +1,49 @@
 // @flow
-import React, { PureComponent } from 'react';
-import { Text, TouchableWithoutFeedback, View, StyleSheet } from 'react-native';
+import React, { PureComponent } from "react";
+import { Text, TouchableWithoutFeedback, View, StyleSheet } from "react-native";
+
+import { getRawLocation, multilineLocateWord } from "./util";
 
 import {
-  getRawLocation,
-  multilineLocateWord,
-  isCharacterIndexSelectedWord,
-} from './util';
-
-import {
-  type TextSection,
-  type BufferLocation,
   type Lines,
   type Line,
   type PressEvent,
-  type RawLocation,
-} from './types';
+  type RawLocation
+} from "./types";
 
 import {
   CONTINUED_STRING,
   CONTINUING_STRING,
   CHARACTER_WIDTH,
   CHARACTER_HEIGHT,
-  FONT_FAMILY,
-} from './constants';
+  FONT_FAMILY
+} from "./constants";
 
 const styles = StyleSheet.create({
   text: {
     fontFamily: FONT_FAMILY,
     fontSize: 14,
-    minHeight: CHARACTER_HEIGHT,
+    minHeight: CHARACTER_HEIGHT
   },
   line: {},
   selectedLine: {
-    backgroundColor: '#FDDD81',
+    backgroundColor: "#FDDD81"
   },
   continued: {
-    backgroundColor: '#EEEEEE',
-    color: '#888888',
+    backgroundColor: "#EEEEEE",
+    color: "#888888"
   },
   continuing: {
-    backgroundColor: '#EEEEEE',
-    color: '#888888',
+    backgroundColor: "#EEEEEE",
+    color: "#888888"
   },
   normal: {},
   highlight: {
-    backgroundColor: '#FFBBBB',
+    backgroundColor: "#FFBBBB"
   },
   current: {
-    backgroundColor: '#FF8888',
-  },
+    backgroundColor: "#FF8888"
+  }
 });
 
 type Props = {
@@ -58,10 +52,10 @@ type Props = {
   lines: Lines,
   onSelectLine: (Line) => void,
   // FIXME use a single type for describing a location
-  onSelectWord: (string, RawLocation) => void,
+  onSelectWord: (string, RawLocation) => void
 };
 
-export default class BufferLine extends PureComponent<void, Props, void> {
+export default class BufferLine extends PureComponent<Props> {
   onLinePress = (evt: PressEvent) => {
     const {
       item,
@@ -69,7 +63,7 @@ export default class BufferLine extends PureComponent<void, Props, void> {
       lines,
       onSelectWord,
       onSelectLine,
-      item: { textSections },
+      item: { textSections }
     } = this.props;
     // item.text is the raw string without the padding characters
     // evt.nativeEvent.locationX is the position of the tap in the screen with character
@@ -103,7 +97,7 @@ export default class BufferLine extends PureComponent<void, Props, void> {
 
   render() {
     const {
-      item: { continuing, continued, textSections, rawLineIndex, isSelected },
+      item: { continuing, continued, textSections, rawLineIndex, isSelected }
     } = this.props;
 
     const textComponents = textSections.map(textSection => {

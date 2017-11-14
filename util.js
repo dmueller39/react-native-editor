@@ -1,27 +1,27 @@
 // @flow
 
-import _ from 'lodash';
+import _ from "lodash";
 
-import type { Edit } from './Edit';
+import type { Edit } from "./Edit";
 
 import {
   type TextSection,
   type Lines,
   type Line,
   type RawLocation,
-  type BufferLocation,
-} from './types';
+  type BufferLocation
+} from "./types";
 
 import {
   CONTINUED_STRING,
   CONTINUING_STRING,
   CHARACTER_WIDTH,
   CHARACTER_HEIGHT,
-  CHARACTER_REGEXP,
-} from './constants';
+  CHARACTER_REGEXP
+} from "./constants";
 
 export function getTextOnlySection(text: string): Array<TextSection> {
-  return [{ text, start: 0, end: text.length, highlight: 'normal' }];
+  return [{ text, start: 0, end: text.length, highlight: "normal" }];
 }
 
 export function getTextSubsections(
@@ -49,7 +49,7 @@ export function getTextSubsections(
         ...section,
         start,
         end,
-        text: section.text.substr(start - sectionStart, end - start),
+        text: section.text.substr(start - sectionStart, end - start)
       });
     }
   });
@@ -77,7 +77,7 @@ export function getTextSections(
         text: text.substr(fromIndex, index - fromIndex),
         start: fromIndex,
         end: index,
-        highlight: 'normal',
+        highlight: "normal"
       });
     }
     fromIndex = selectedWord.length + index;
@@ -88,7 +88,7 @@ export function getTextSections(
       text: selectedWord,
       start: index,
       end: fromIndex,
-      highlight: isCurrent ? 'current' : 'highlight',
+      highlight: isCurrent ? "current" : "highlight"
     });
     index = text.indexOf(selectedWord, fromIndex);
   }
@@ -97,7 +97,7 @@ export function getTextSections(
       text: text.substr(fromIndex, text.length - fromIndex),
       start: fromIndex,
       end: text.length,
-      highlight: 'normal',
+      highlight: "normal"
     });
   }
   return sections;
@@ -123,8 +123,8 @@ export function processLine(
         continuing: false,
         continued: false,
         textSections: [],
-        isSelected,
-      },
+        isSelected
+      }
     ];
   }
 
@@ -145,8 +145,8 @@ export function processLine(
         continuing: false,
         continued: false,
         isEditing: false,
-        isSelected,
-      },
+        isSelected
+      }
     ];
   }
   let index = 0;
@@ -167,7 +167,7 @@ export function processLine(
       start: index,
       end: index + length,
       isEditing: false,
-      isSelected,
+      isSelected
     });
     index += length;
   }
@@ -178,7 +178,7 @@ export function getMaxCharacters(width: number): number {
   const maxCharacters = Math.floor(width / CHARACTER_WIDTH);
   // the math gets messed up if the maxCharacters is too small
   if (maxCharacters - CONTINUED_STRING.length - CONTINUING_STRING.length < 1) {
-    throw new Error('invalid width provided');
+    throw new Error("invalid width provided");
   }
   return maxCharacters;
 }
@@ -192,7 +192,7 @@ export function processLines(
   isEditing: boolean
 ): Lines {
   const combinedLines: Array<Lines> = data
-    .split('\n')
+    .split("\n")
     .map((text, rawLineIndex) =>
       processLine(
         text,
@@ -251,8 +251,8 @@ export function updateLinesWithEdit(
 
   const rawLineIndex = lines[selectedLineIndex].rawLineIndex;
 
-  if (text.includes('\n')) {
-    const pieces = text.split('\n');
+  if (text.includes("\n")) {
+    const pieces = text.split("\n");
 
     const maxCharacters = getMaxCharacters(width);
 
@@ -274,14 +274,14 @@ export function updateLinesWithEdit(
       continuing: false,
       continued: false,
       isSelected: true,
-      textSections: [],
+      textSections: []
     };
 
     const pre = lines.slice(0, selectedLineIndex);
 
     const post = lines.slice(selectedLineIndex + 1).map(line => ({
       ...line,
-      rawLineIndex: line.rawLineIndex + 1,
+      rawLineIndex: line.rawLineIndex + 1
     }));
 
     return [...pre, ...lines1, line2, ...post];
@@ -296,7 +296,7 @@ export function updateLinesWithEdit(
     continued: false,
     isSelected: true,
     textSections: [],
-    selection: null,
+    selection: null
   };
 
   const pre = lines.slice(0, selectedLineIndex);
@@ -328,7 +328,7 @@ export function updateLinesByDeletingNewline(
   const previousText = lines
     .filter(line => line.rawLineIndex === previousLineRawLineIndex)
     .map(line => line.text)
-    .join('');
+    .join("");
 
   const text = previousText + line2.text;
 
@@ -341,14 +341,14 @@ export function updateLinesByDeletingNewline(
     continued: false,
     textSections: [],
     isSelected: true,
-    selection: { start: previousText.length, end: previousText.length },
+    selection: { start: previousText.length, end: previousText.length }
   };
 
   const pre = lines.slice(0, previousLineIndex);
 
   const post = lines.slice(selectedLineIndex + 1).map(l => ({
     ...l,
-    rawLineIndex: l.rawLineIndex - 1,
+    rawLineIndex: l.rawLineIndex - 1
   }));
 
   return [...pre, line, ...post];
@@ -363,17 +363,25 @@ function guessEditingLineHeight(line: Line, width: number) {
 }
 
 export function getLineLayout(
-  data: Lines,
+  data: ?Lines,
   index: number,
   editableLineHeight: ?number,
   width: number
 ) {
-  const editingIndex = data.findIndex(line => line.isEditing);
-  if (editingIndex == -1 || index < editingIndex) {
+  if (data == null) {
     return {
       length: CHARACTER_HEIGHT,
       offset: index * CHARACTER_HEIGHT,
-      index,
+      index
+    };
+  }
+
+  const editingIndex = data.findIndex(line => line.isEditing);
+  if (editingIndex === -1 || index < editingIndex) {
+    return {
+      length: CHARACTER_HEIGHT,
+      offset: index * CHARACTER_HEIGHT,
+      index
     };
   }
   const calcEditableLineHeight = editableLineHeight ||
@@ -382,14 +390,14 @@ export function getLineLayout(
     return {
       length: calcEditableLineHeight,
       offset: index * CHARACTER_HEIGHT,
-      index,
+      index
     };
   }
 
   return {
     length: CHARACTER_HEIGHT,
     offset: (index - 1) * CHARACTER_HEIGHT + calcEditableLineHeight,
-    index,
+    index
   };
 }
 
@@ -409,7 +417,7 @@ export function getMatchLocations(
     locations.push({
       start: index,
       end: fromIndex,
-      lineIndex,
+      lineIndex
     });
     index = haystack.indexOf(word, fromIndex);
   }
@@ -418,7 +426,7 @@ export function getMatchLocations(
 
 export function getAllMatchLocations(word: string, haystack: string) {
   return _.flatten(
-    _.map(haystack.split('\n'), (line, index) =>
+    _.map(haystack.split("\n"), (line, index) =>
       getMatchLocations(line, word, index))
   );
 }
@@ -465,7 +473,7 @@ export function getDataWithReplaceWord(
   selectedLocation: RawLocation,
   data: string
 ) {
-  const lines = data.split('\n').slice(0, selectedLocation.lineIndex);
+  const lines = data.split("\n").slice(0, selectedLocation.lineIndex);
   const newlineCharacterCount = selectedLocation.lineIndex;
   const charactersBeforeLine: number = lines
     .map(line => line.length)
@@ -500,7 +508,7 @@ export function getRawLocation(
   return {
     start,
     end: start + length,
-    lineIndex: item.rawLineIndex,
+    lineIndex: item.rawLineIndex
   };
 }
 
@@ -510,7 +518,7 @@ export const isCharacterIndexSelectedWord = (
 ): boolean =>
   textSections.find(
     textSection =>
-      textSection.highlight === 'current' &&
+      textSection.highlight === "current" &&
       textSection.start <= characterIndex &&
       characterIndex < textSection.end
   ) !== undefined;
@@ -524,7 +532,7 @@ export function locateWord(text: string, index: number) {
       start: -1,
       length: 0,
       nextLinePossible: false,
-      previousLinePossible: false,
+      previousLinePossible: false
     };
   }
   // start is the index of the first character that IS a word character
@@ -546,7 +554,7 @@ export function locateWord(text: string, index: number) {
     start,
     length: endIndex - start,
     nextLinePossible: endIndex === text.length,
-    previousLinePossible: start === 0,
+    previousLinePossible: start === 0
   };
 }
 
@@ -581,7 +589,7 @@ export function multilineLocateWord(
     }
   }
 
-  let word = '';
+  let word = "";
 
   const locations = [];
 
@@ -595,7 +603,7 @@ export function multilineLocateWord(
       locations.push({
         start: nextLocation.start,
         length: nextLocation.length,
-        lineIndex: nextLineIndex,
+        lineIndex: nextLineIndex
       });
       word = word.concat(
         nextLine.text.substr(nextLocation.start, nextLocation.length)
@@ -610,7 +618,7 @@ export function multilineLocateWord(
 
   return {
     word,
-    locations,
+    locations
   };
 }
 
@@ -640,7 +648,7 @@ export function getChangeTextEdit(lines: Lines, edit: Edit): ?Edit {
   return {
     ...edit,
     start: edit.start + lineStart,
-    end: edit.end + lineStart,
+    end: edit.end + lineStart
   };
 }
 
@@ -656,7 +664,7 @@ export function getDeleteLineEdit(lines: Lines): ?Edit {
   return {
     start,
     end,
-    replacement: '',
+    replacement: ""
   };
 }
 
@@ -664,7 +672,7 @@ export function getIndexOfNewline(str: string, num: number): number {
   let index = -1;
   let newlineNum = -1;
   while (newlineNum < num && (index != -1 || newlineNum === -1)) {
-    index = str.indexOf('\n', index + 1);
+    index = str.indexOf("\n", index + 1);
     newlineNum++;
   }
   return index;

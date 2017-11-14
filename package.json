@@ -19,9 +19,10 @@
     "flow-check": "node node_modules/flow-bin/cli.js check"
   },
   "dependencies": {
+    "babel-eslint": "^8.0.2",
     "lodash": "^4.17.4",
-		"react": "16.0.0",
-		"react-native": "0.50.0"
+    "react": "16.0.0",
+    "react-native": "0.50.0"
   },
   "devDependencies": {
     "babel-jest": "20.0.3",
@@ -32,7 +33,7 @@
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^5.0.1",
     "eslint-plugin-react": "^7.0.1",
-    "flow-bin": "^0.45.0",
+    "flow-bin": "^0.56.0",
     "jest": "20.0.4",
     "prettier": "^0.22.0",
     "react-test-renderer": "16.0.0-alpha.12"

@@ -1,38 +1,31 @@
 // @flow
-import React, { PureComponent } from 'react';
-import { FlatList } from 'react-native';
+import React, { PureComponent } from "react";
+import { FlatList } from "react-native";
+import { type ViewToken } from "react-native/Libraries/Lists/ViewabilityHelper";
 
 import {
   type Line,
   type Lines,
   type RawLocation,
   type LayoutEvent,
-  isLocationEqual,
-} from './types';
+  isLocationEqual
+} from "./types";
 
-import type { Edit } from './Edit';
+import type { Edit } from "./Edit";
 
-import EditableLine from './EditableLine';
-import BufferLine from './BufferLine';
+import EditableLine from "./EditableLine";
+import BufferLine from "./BufferLine";
 
 import {
   processLines,
   getLineLayout,
   getMaxCharacters,
-  processLine,
   updateLinesWithEdit,
   updateLinesByDeletingNewline,
   getEditingRawLineIndex,
   getChangeTextEdit,
-  getDeleteLineEdit,
-} from './util';
-
-const defaultProps = {
-  data: '',
-  width: 320,
-};
-
-type DefaultProps = typeof defaultProps;
+  getDeleteLineEdit
+} from "./util";
 
 type Props = {
   onSelectLine: (number) => void,
@@ -43,35 +36,31 @@ type Props = {
   isEditing: boolean,
   selectedWord: ?string,
   selectedLineIndex: ?number,
-  selectedLocation: ?RawLocation,
+  selectedLocation: ?RawLocation
 };
 
 type State = {
   lines: Lines,
   edits: (?Edit)[],
-  editableLineHeight: ?number,
+  editableLineHeight: ?number
 };
 
 function linesMustAscend(lines: Lines) {
   let last = 0;
   lines.forEach(line => {
-    if (last != line.rawLineIndex && last != line.rawLineIndex - 1) {
-      console.log(JSON.stringify(lines));
-      console.error('Lines must ascend');
+    if (last !== line.rawLineIndex && last !== line.rawLineIndex - 1) {
+      console.log(JSON.stringify(lines)); // eslint-disable-line no-console
+      console.error("Lines must ascend"); // eslint-disable-line no-console
     }
     last = line.rawLineIndex;
   });
 }
 
-export default class Buffer extends PureComponent<DefaultProps, Props, State> {
-  static defaultProps = defaultProps;
-  state: State = {
-    lines: [],
-    edits: [],
-    editableLineHeight: null,
+export default class Buffer extends PureComponent<Props, State> {
+  static defaultProps = {
+    data: "",
+    width: 320
   };
-
-  editableLineRef: ?EditableLine = null;
 
   constructor(props: Props) {
     super();
@@ -88,16 +77,22 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
           props.selectedLineIndex,
           props.isEditing
         ),
-        editableLineHeight: null,
+        editableLineHeight: null
       };
     }
   }
 
+  state: State = {
+    lines: [],
+    edits: [],
+    editableLineHeight: null
+  };
+
   componentWillReceiveProps(nextProps: Props) {
     if (nextProps.width > 0) {
       const maxCharacters = getMaxCharacters(nextProps.width);
-      const didChangeIsEditing = nextProps.isEditing != this.props.isEditing;
-      this.setState(oldState => {
+      const didChangeIsEditing = nextProps.isEditing !== this.props.isEditing;
+      this.setState((oldState: State) => {
         // reset the edits if isEditing changes value
         const edits = didChangeIsEditing ? [] : oldState.edits;
         const editableLineHeight = didChangeIsEditing && !nextProps.isEditing
@@ -113,7 +108,7 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
             nextProps.selectedLocation,
             nextProps.selectedLineIndex,
             nextProps.isEditing
-          ),
+          )
         };
       });
     }
@@ -135,14 +130,69 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     }
   }
 
-  captureEditableLineRef = (editableLine: EditableLine) => {
-    this.editableLineRef = editableLine;
+  onViewableItemsChanged = (info: { viewableItems: Array<ViewToken> }) => {
+    this.viewableItems = info.viewableItems;
   };
 
+  onChangeData = () => {
+    // TODO determine if its the right pattern to pass `this` here. (No?)
+    this.props.onChangeData();
+  };
+
+  onCommitingEdit = (rawEdits: Edit[]) => {
+    this.setState(
+      (oldState: State) => this.getUpdatedStateWithRawEdits(oldState, rawEdits),
+      this.onChangeData
+    );
+  };
+
+  onDeleteNewline = (rawEdits: Edit[]) => {
+    this.setState(
+      (oldState: State) => {
+        const state = this.getUpdatedStateWithRawEdits(oldState, rawEdits);
+        const lines = updateLinesByDeletingNewline(
+          state.lines,
+          this.props.width,
+          this.props.selectedWord,
+          this.props.selectedLocation
+        );
+        const edits = [...state.edits, getDeleteLineEdit(state.lines)];
+        return {
+          edits,
+          lines
+        };
+      },
+      this.onChangeData
+    );
+  };
+
+  onSelectLine = (line: Line) => {
+    const editingLine = this.state.lines.find(item => item.isEditing);
+    if (editingLine != null) {
+      // TODO if editing start editing selected line
+      return;
+    }
+    this.props.onSelectLine(line.rawLineIndex);
+  };
+
+  onSelectWord = (word: string, location: RawLocation) => {
+    const editingLine = this.state.lines.find(line => line.isEditing);
+    if (editingLine != null) {
+      // TODO if editing start editing selected line
+      return;
+    }
+    this.props.onSelectWord(word, location);
+  };
+
+  onEditableLineLayout = (event: LayoutEvent) => {
+    this.setState({
+      editableLineHeight: event.nativeEvent.layout.height
+    });
+  };
   getUpdatedStateWithRawEdits(state: State, rawEdits: Edit[]): State {
     let lines = this.state.lines;
 
-    const partialEdits = rawEdits.map(edit => {
+    const partialEdits = rawEdits.map((edit: Edit) => {
       const absoluteEdit = getChangeTextEdit(lines, edit);
       lines = updateLinesWithEdit(
         lines,
@@ -177,71 +227,19 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     return getEditingRawLineIndex(this.state.lines);
   }
 
-  onViewableItemsChanged = (info: { viewableItems: Array<{ item: Line }> }) => {
-    this.viewableItems = info.viewableItems;
+  getItemLayout = (data: ?Lines, index: number) =>
+    getLineLayout(data, index, this.state.editableLineHeight, this.props.width);
+
+  captureEditableLineRef = (editableLine: ?EditableLine) => {
+    this.editableLineRef = editableLine;
   };
 
-  onChangeData = () => {
-    // TODO determine if its the right pattern to pass `this` here. (No?)
-    this.props.onChangeData();
-  };
-
-  onCommitingEdit = (rawEdits: Edit[]) => {
-    this.setState(
-      (oldState: State) => this.getUpdatedStateWithRawEdits(oldState, rawEdits),
-      this.onChangeData
-    );
-  };
-
-  onDeleteNewline = (rawEdits: Edit[]) => {
-    this.setState(
-      (oldState: State) => {
-        const state = this.getUpdatedStateWithRawEdits(oldState, rawEdits);
-        const lines = updateLinesByDeletingNewline(
-          state.lines,
-          this.props.width,
-          this.props.selectedWord,
-          this.props.selectedLocation
-        );
-        const edits = [...state.edits, getDeleteLineEdit(state.lines)];
-        return {
-          edits,
-          lines,
-        };
-      },
-      this.onChangeData
-    );
-  };
-
-  onSelectLine = (line: Line) => {
-    const editingLine = this.state.lines.find(line => line.isEditing);
-    if (editingLine != null) {
-      // TODO if editing start editing selected line
-      return;
-    }
-    this.props.onSelectLine(line.rawLineIndex);
-  };
-
-  onSelectWord = (word: string, location: RawLocation) => {
-    const editingLine = this.state.lines.find(line => line.isEditing);
-    if (editingLine != null) {
-      // TODO if editing start editing selected line
-      return;
-    }
-    this.props.onSelectWord(word, location);
-  };
-
-  onEditableLineLayout = (event: LayoutEvent) => {
-    this.setState({
-      editableLineHeight: event.nativeEvent.layout.height,
-    });
-  };
-
-  flatListRef: FlatList<Line>;
-  viewableItems: Array<{ item: Line }> = [];
+  editableLineRef: ?EditableLine = null;
+  flatListRef: ?FlatList<Line>;
+  viewableItems: Array<ViewToken> = [];
   scrollToRawLineIndex(rawLineIndex: number) {
     const viewableSelectedItem = this.viewableItems.find(
-      viewableItem => viewableItem.item.rawLineIndex === rawLineIndex
+      ({ item }: { item: Line }) => item.rawLineIndex === rawLineIndex
     );
 
     // don't scroll if the line is already visible
@@ -254,15 +252,17 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
         throw new Error(`raw index not found (${rawLineIndex})`);
       }
 
-      this.flatListRef.scrollToIndex({
-        index,
-        viewPosition: 0.5,
-        animated: false,
-      });
+      if (this.flatListRef != null) {
+        this.flatListRef.scrollToIndex({
+          index,
+          viewPosition: 0.5,
+          animated: false
+        });
+      }
     }
   }
 
-  captureRef = (ref: FlatList<Line>) => {
+  captureRef = (ref: ?FlatList<Line>) => {
     this.flatListRef = ref;
   };
 
@@ -290,25 +290,17 @@ export default class Buffer extends PureComponent<DefaultProps, Props, State> {
     );
   };
 
-  getItemLayout = (data: Lines, index: number) => {
-    return getLineLayout(
-      data,
-      index,
-      this.state.editableLineHeight,
-      this.props.width
-    );
-  };
-
   render() {
     linesMustAscend(this.state.lines);
+    const { data, ...restProps } = this.props;
     return (
       <FlatList
-        {...this.props}
+        {...restProps}
         ref={this.captureRef}
         getItemLayout={this.getItemLayout}
         onViewableItemsChanged={this.onViewableItemsChanged}
         showsVerticalScrollIndicator={false}
-        keyExtractor={(item: void, index: number) => `line-${String(index)}`}
+        keyExtractor={(item: Line, index: number) => `line-${String(index)}`}
         windowSize={5}
         data={this.state.lines}
         renderItem={this.renderItem}

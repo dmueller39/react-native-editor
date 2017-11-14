@@ -10,13 +10,16 @@ module.exports = {
     return [
       'react-native',
       'react',
-      'lodash',
+      'lodash'
     ];
   },
   getBlacklistRE() {
     return blacklist([
       new RegExp(
         `^${escape(path.resolve(__dirname, '..', 'node_modules'))}\\/.*$`
+      ),
+      new RegExp(
+        `^${escape(path.resolve(__dirname, 'node_modules', 'xmlbuilder', 'node_modules', 'lodash'))}\\/.*$`
       ),
     ]);
   },
